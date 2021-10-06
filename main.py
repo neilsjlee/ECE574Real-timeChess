@@ -267,7 +267,9 @@ def main():
                     if event.button != 3:
                         true_target, target_square = find_square(event.pos[0], event.pos[1], board_flipped)
                         target = board[target_square[1]][target_square[0]]
-                        if target and turn == target.colour:
+                        # if target and turn == target.colour:
+                        if target:
+                        # Modified above 1 line(s)
                             legal_moves = target.find_moves(board, target_square, kings, check)
                     elif target_square and target:
                         true_target, destination = find_square(event.pos[0], event.pos[1], board_flipped)
@@ -321,8 +323,11 @@ def main():
                 pg.quit()
                 sys.exit()
         draw_text(screen, micro_font, turn, COLOUR, check, playing, promotion, auto_flip)
-        if target_square and target and turn == target.colour and legal_moves:
-            draw_legal_moves(screen, COLOUR, legal_moves, board, board_flipped)
+        # if target_square and target and turn == target.colour and legal_moves:
+        #     draw_legal_moves(screen, COLOUR, legal_moves, board, board_flipped)
+        if target_square and target and legal_moves:
+            draw_legal_moves(screen, target.colour, legal_moves, board, board_flipped)
+        # Modified above 2 line(s)
         if captures:
             draw_captures(screen, font, captures, board_flipped)
         if check:
