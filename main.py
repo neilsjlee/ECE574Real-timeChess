@@ -4,6 +4,7 @@ import pygame as pg
 from pygame import freetype
 import pieces
 import sys
+import time
 
 w = 660
 h = 490
@@ -64,12 +65,19 @@ def draw_coords(screen, font, flipped):
             font.render_to(screen, (45 + (col * 50), 450), chr(65 + col))
 
 
-def draw_pieces(screen, font, board, flipped):
-    for row, pieces in enumerate(board[::(-1 if flipped else 1)]):
-        for square, piece in enumerate(pieces[::(-1 if flipped else 1)]):
-            if piece:
-                font.render_to(screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)),
-                               piece.image, BLACK)
+def draw_pieces(screen, font, board, flipped, process, delta_x=None, delta_y=None, destination=None):
+    ###################modified lines
+    if process:
+        piece = board[destination[1]][destination[0]]
+        font.render_to(screen , (piece.img_adjust[0] - delta_x + (destination[0] * 50) ,
+                                 piece.img_adjust[1] - delta_y + (destination[1] * 50)) ,piece.image , SILVER)
+    ###################
+    else:
+        for row, pieces in enumerate(board[::(-1 if flipped else 1)]):
+            for square, piece in enumerate(pieces[::(-1 if flipped else 1)]):
+                if piece:
+                    font.render_to(screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)),
+                                   piece.image, BLACK)
 
 
 def find_square(x, y, flipped):
@@ -105,7 +113,7 @@ def draw_legal_moves(screen, colour, moves, board, flipped):
         if flipped:
             pg.draw.circle(screen, colour, ((65 + ((7 - move[0]) * 50), 65 + ((7 - move[1]) * 50))), 5)
         else:
-            pg.draw.circle(screen, colour, ((65 + (move[0] * 50), 65 + (move[1] * 50))), 5)
+            pg.draw.circle(screen , colour , (65 + (move[0] * 50), 65 + (move[1] * 50)) , 5)
 
 
 def draw_captures(screen, font, captures, flipped):
@@ -150,6 +158,8 @@ def move_piece(board, target, kings, origin, destination, captures, promotion):
             target.en_passant = True
         if origin[0] != destination[0] and not board[destination[1]][destination[0]]:
             captures.append(board[destination[1] - target.direction][destination[0]])
+            # print(captures)
+            # print([destination[1] - target.direction][destination[0]])
             board[destination[1] - target.direction][destination[0]] = None
             transcript += coords_to_notation(origin)[0]
         if destination[1] == (0 if target.colour == 'white' else 7):
@@ -260,7 +270,7 @@ def main():
         if target_square:
             pg.draw.rect(screen, COLOUR, ((40 + (true_target[0] * 50)), 40 + (true_target[1] * 50), 50, 50), width=2)
         draw_coords(screen, font, board_flipped)
-        draw_pieces(screen, font, board, board_flipped)
+        draw_pieces(screen, font, board, board_flipped, process=False)
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
                 if playing and 441 > event.pos[0] > 39 and 441 > event.pos[1] > 39:
@@ -276,6 +286,18 @@ def main():
                         if destination in legal_moves:
                             board, captures, kings, check = move_piece(board, target, kings, target_square, destination,
                                                                        captures, promotion)
+
+                            ###################modified lines
+                            delta_x = 50 * (destination[0] - target_square[0]) / 4
+                            delta_y = 50 * (destination[1] - target_square[1]) / 4
+                            for i in [3, 2, 1]:
+                                copy_screen = screen.copy()
+                                draw_pieces(screen , font , board , board_flipped , process=True, delta_x=delta_x*i,
+                                            delta_y=delta_y*i, destination=destination)
+                                pg.display.update()
+                                screen.blit(copy_screen, (0,0))
+                                time.sleep(0.25)
+                            ###################
                             if check and checkmate(board, turn, kings):
                                 playing = False
                                 target_square = None
