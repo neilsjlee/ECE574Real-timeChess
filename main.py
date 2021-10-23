@@ -179,8 +179,6 @@ def process_movement(screen, font, board):
             each['current_coordinate_y'] += each['speed_y']
 
         piece = each['target']
-#         font.render_to(screen , (int(piece.img_adjust[0] + each['current_coordinate_x'] * 50),
-#                        int(piece.img_adjust[1] - each['current_coordinate_y'] * 50)) ,piece.image , SILVER)
         font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),
                                 piece.img_adjust[1] + int(each['current_coordinate_y'] * 50)), piece.image, SILVER)
 
@@ -333,8 +331,7 @@ def main():
                         true_target, destination = find_square(event.pos[0], event.pos[1], board_flipped)
                         if destination in legal_moves:
                             start_new_movement(board, target, target_square, destination, datetime.now())
-                            board, captures, kings, check = move_piece(board, target, kings, target_square, destination,
-                                                                       captures, promotion)
+                            board, captures, kings, check = move_piece(board, target, kings, target_square, destination, captures, promotion)
 
                             ###################modified lines
                             '''
