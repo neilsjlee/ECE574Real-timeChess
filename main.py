@@ -5,6 +5,9 @@ from pygame import freetype
 import pieces
 import sys
 import time
+import math
+from datetime import datetime
+
 
 w = 660
 h = 490
@@ -18,6 +21,12 @@ GREEN = (0, 255, 0)
 RED = (215, 0, 0)
 ORANGE = (255, 165, 0)
 transcript, turn_number = '', 0
+
+FPS = 60
+PIECE_MOVEMENT_SPEED = 1 / FPS
+
+
+movement_list = []
 
 
 def coords_to_notation(coords):
@@ -136,6 +145,44 @@ def draw_captures(screen, font, captures, flipped):
         else:
             font.render_to(screen, (400 + piece.img_adjust[0] + ((e - 12) * 35), 80 + piece.img_adjust[1]), piece.image,
                            BLACK)
+
+
+def start_new_movement(board, target, origin, destination, start_time):
+    global movement_list
+
+    angle = math.atan2((origin[1] - destination[1]), (origin[0] - destination[0]))
+
+    movement_list.append({"target": target,
+                          "origin": origin,
+                          "destination": destination,
+                          "current_coordinate_x": origin[0],
+                          "current_coordinate_y": origin[1],
+                          "start_time": start_time,
+                          "end_time": (((((origin[0] - destination[0]) ** 2) + ((origin[1] - destination[1]) ** 2)) ** (1/2)) / PIECE_MOVEMENT_SPEED),
+                          "angle": angle,
+                          "speed_x": - math.cos(angle) * PIECE_MOVEMENT_SPEED,
+                          "speed_y": - math.sin(angle) * PIECE_MOVEMENT_SPEED
+                          })
+    print(movement_list)
+
+
+def process_movement(screen, font, board):
+    global movement_list
+    for each in movement_list:
+        print(each)
+        if (abs(each['current_coordinate_y'] - each['destination'][1]) < 0.01) & (abs(each['current_coordinate_x'] - each['destination'][0]) < 0.01):
+            movement_list.remove(each)
+            print("done")
+            break
+        else:
+            each['current_coordinate_x'] += each['speed_x']
+            each['current_coordinate_y'] += each['speed_y']
+
+        piece = each['target']
+#         font.render_to(screen , (int(piece.img_adjust[0] + each['current_coordinate_x'] * 50),
+#                        int(piece.img_adjust[1] - each['current_coordinate_y'] * 50)) ,piece.image , SILVER)
+        font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),
+                                piece.img_adjust[1] + int(each['current_coordinate_y'] * 50)), piece.image, SILVER)
 
 
 def move_piece(board, target, kings, origin, destination, captures, promotion):
@@ -271,6 +318,7 @@ def main():
             pg.draw.rect(screen, COLOUR, ((40 + (true_target[0] * 50)), 40 + (true_target[1] * 50), 50, 50), width=2)
         draw_coords(screen, font, board_flipped)
         draw_pieces(screen, font, board, board_flipped, process=False)
+        process_movement(screen, font, board)
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
                 if playing and 441 > event.pos[0] > 39 and 441 > event.pos[1] > 39:
@@ -284,10 +332,12 @@ def main():
                     elif target_square and target:
                         true_target, destination = find_square(event.pos[0], event.pos[1], board_flipped)
                         if destination in legal_moves:
+                            start_new_movement(board, target, target_square, destination, datetime.now())
                             board, captures, kings, check = move_piece(board, target, kings, target_square, destination,
                                                                        captures, promotion)
 
                             ###################modified lines
+                            '''
                             delta_x = 50 * (destination[0] - target_square[0]) / 4
                             delta_y = 50 * (destination[1] - target_square[1]) / 4
                             for i in [3, 2, 1]:
@@ -297,6 +347,7 @@ def main():
                                 pg.display.update()
                                 screen.blit(copy_screen, (0,0))
                                 time.sleep(0.25)
+                            '''
                             ###################
                             if check and checkmate(board, turn, kings):
                                 playing = False
