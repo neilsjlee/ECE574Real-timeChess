@@ -179,7 +179,7 @@ def process_movement(screen, font, board):
             each['current_coordinate_y'] += each['speed_y']
 
         piece = each['target']
-        font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),
+        font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),  
                                 piece.img_adjust[1] + int(each['current_coordinate_y'] * 50)), piece.image, SILVER)
 
 
