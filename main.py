@@ -147,7 +147,7 @@ def draw_captures(screen, font, captures, flipped):
                            BLACK)
 
 
-def start_new_movement(board, target, origin, destination, start_time):
+def start_new_movement(board, target, origin, destination, start_time, action, promotion):
     global movement_list
 
     angle = math.atan2((origin[1] - destination[1]), (origin[0] - destination[0]))
@@ -163,14 +163,33 @@ def start_new_movement(board, target, origin, destination, start_time):
                           "speed_x": - math.cos(angle) * PIECE_MOVEMENT_SPEED,
                           "speed_y": - math.sin(angle) * PIECE_MOVEMENT_SPEED
                           })
-    print(movement_list)
+    if not action:
+        action.append([target , destination, promotion])
+    elif any((piece[0] == target) and (piece[1] == destination) for piece in action):
+        pass
+    else:
+        [action.remove(item) for item in action if item[0] == target]
+        action.append([target, destination, promotion])
+    return action
+    #print(movement_list)
 
 
-def process_movement(screen, font, board):
-    global movement_list
+def process_movement(screen, font, board, action):
+    global movement_list, transcript, promoting
     for each in movement_list:
-        print(each)
+        #print(each)
         if (abs(each['current_coordinate_y'] - each['destination'][1]) < 0.01) & (abs(each['current_coordinate_x'] - each['destination'][0]) < 0.01):
+            for item in action:
+                if item[0] == each['target']:
+                    if not promoting:
+                        print(item[1])
+                        print(board[4][0])
+                        board[item[1][1]][item[1][0]] = item[0]
+                    else:
+                        piece_dict = {'queen': pieces.Queen(item[0].colour) , 'knight': pieces.Knight(item[0].colour) ,
+                                      'rook': pieces.Rook(item[0].colour) , 'bishop': pieces.Bishop(item[0].colour)}
+                        board[item[1][1]][item[1][0]] = piece_dict[item[2]]
+                        transcript = transcript[:-1] + f'={item[2][0].upper()} ' if item[2] != 'knight' else '=N '
             movement_list.remove(each)
             print("done")
             break
@@ -179,12 +198,13 @@ def process_movement(screen, font, board):
             each['current_coordinate_y'] += each['speed_y']
 
         piece = each['target']
-        font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),  
+        font.render_to(screen, (piece.img_adjust[0] + int(each['current_coordinate_x'] * 50),
                                 piece.img_adjust[1] + int(each['current_coordinate_y'] * 50)), piece.image, SILVER)
+    return action, board
 
 
 def move_piece(board, target, kings, origin, destination, captures, promotion):
-    global transcript, turn_number
+    global transcript, turn_number, promoting
     # start transcript
     if target.colour == 'white':
         turn_number += 1
@@ -239,11 +259,11 @@ def move_piece(board, target, kings, origin, destination, captures, promotion):
         captures.append(board[destination[1]][destination[0]])
 
     # move piece
-    if not promoting:
-        board[destination[1]][destination[0]] = target
-    else:
-        board[destination[1]][destination[0]] = piece_dict[promotion]
-        transcript = transcript[:-1] + f'={promotion[0].upper()} ' if promotion != 'knight' else '=N '
+    # if not promoting:
+    #     board[destination[1]][destination[0]] = target
+    # else:
+    #     board[destination[1]][destination[0]] = piece_dict[promotion]
+    #     transcript = transcript[:-1] + f'={promotion[0].upper()} ' if promotion != 'knight' else '=N '
     board[origin[1]][origin[0]] = None
 
     # any checks with new board status
@@ -258,7 +278,7 @@ def draw_check(screen, board, kings, flipped, turn, checkmate):
     else:
         king = kings[0 if turn == 'white' else 1]
     if flipped:
-        pg.draw.circle(screen, RED if checkmate else ORANGE, ((65 + ((7 - king[0]) * 50), 65 + ((7 - king[1]) * 50))),
+        pg.draw.circle(screen, RED if checkmate else ORANGE, ((65 + ((7 - king[0]) * 50), 65 + ((7 - king[1]) * 50))),+
                        25, width=3)
     else:
         pg.draw.circle(screen, RED if checkmate else ORANGE, ((65 + (king[0] * 50), 65 + (king[1] * 50))), 25, width=3)
@@ -307,6 +327,7 @@ def main():
     target = None
     captures = []
     legal_moves = []
+    action_list = []
 
     while True:
         screen.fill(GREY)
@@ -316,7 +337,7 @@ def main():
             pg.draw.rect(screen, COLOUR, ((40 + (true_target[0] * 50)), 40 + (true_target[1] * 50), 50, 50), width=2)
         draw_coords(screen, font, board_flipped)
         draw_pieces(screen, font, board, board_flipped, process=False)
-        process_movement(screen, font, board)
+        action_list, board = process_movement(screen, font, board, action_list)
         for event in pg.event.get():
             if event.type == pg.MOUSEBUTTONDOWN:
                 if playing and 441 > event.pos[0] > 39 and 441 > event.pos[1] > 39:
@@ -330,7 +351,7 @@ def main():
                     elif target_square and target:
                         true_target, destination = find_square(event.pos[0], event.pos[1], board_flipped)
                         if destination in legal_moves:
-                            start_new_movement(board, target, target_square, destination, datetime.now())
+                            action_list = start_new_movement(board, target, target_square, destination, datetime.now(), action_list, promotion)
                             board, captures, kings, check = move_piece(board, target, kings, target_square, destination, captures, promotion)
 
                             ###################modified lines
@@ -392,6 +413,7 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
+        # print('after', board[4][0])
         draw_text(screen, micro_font, turn, COLOUR, check, playing, promotion, auto_flip)
         # if target_square and target and turn == target.colour and legal_moves:
         #     draw_legal_moves(screen, COLOUR, legal_moves, board, board_flipped)
