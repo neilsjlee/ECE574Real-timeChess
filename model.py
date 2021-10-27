@@ -1,3 +1,30 @@
+
+
+class Model:
+
+    def __init__(self):
+        self.board = self.reset_board()
+        self.player_color_is_black = False
+        self.playing = True
+
+        self.target_square = ""
+        self.true_target = ""
+        self.legal_moves = []
+
+    def reset_board(with_pieces=True):
+        def generate_pieces(colour):
+            return [Rook(colour), Knight(colour), Bishop(colour), Queen(colour),
+                    King(colour), Bishop(colour), Knight(colour), Rook(colour)]
+
+        board = [[None for x in range(8)] for x in range(8)]
+        if with_pieces:
+            board[0] = generate_pieces("black")
+            board[7] = generate_pieces("white")
+            board[1] = [Pawn("black") for square in board[1]]
+            board[6] = [Pawn("white") for square in board[6]]
+        return board
+
+
 class Piece:
     images = ['white_king', 'white_queen', 'white_rook', 'white_bishop', 'white_knight', 'white_pawn', 'black_king',
               'black_queen', 'black_rook', 'black_bishop', 'black_knight', 'black_pawn']
