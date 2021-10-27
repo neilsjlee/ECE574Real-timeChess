@@ -10,7 +10,7 @@ class View:
         self.screen = screen
 
         pg.freetype.init()
-        self.font = font = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
+        self.font = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
         self.micro_font = pg.freetype.Font('FreeSerif-4aeK.ttf', 25)
 
     def draw_squares(self):
