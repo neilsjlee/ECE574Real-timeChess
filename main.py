@@ -38,7 +38,7 @@ class Main(threading.Thread):
             #     pg.draw.rect(self.screen, (255, 0, 0), (piece.x, piece.y, 25, 25))
 
             pg.display.update()
-            self.clock.tick(60)
+            self.clock.tick(FPS)
 
         pg.quit()
 

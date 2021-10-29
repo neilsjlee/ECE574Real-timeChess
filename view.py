@@ -9,7 +9,7 @@ class View:
         self.m = model
         self.screen = screen
 
-        pg.freetype.init()
+        self.pg.freetype.init()
         self.font = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
         self.micro_font = pg.freetype.Font('FreeSerif-4aeK.ttf', 25)
 
@@ -50,6 +50,12 @@ class View:
         if self.m.target_square:
             self.pg.draw.rect(self.screen, BLACK, ((40 + (self.m.true_target[0] * 50)), 40 + (self.m.true_target[1] * 50), 50, 50), width=2)
 
+    def draw_legal_moves(self):
+        for move in self.m.legal_moves:
+            if self.m.player_color_is_black:
+                self.pg.draw.circle(self.screen, ORANGE, ((65 + ((7 - move[0]) * 50), 65 + ((7 - move[1]) * 50))), 5)
+            else:
+                self.pg.draw.circle(self.screen, ORANGE, (65 + (move[0] * 50), 65 + (move[1] * 50)), 5)
 
     def view_process(self):
         self.screen.fill(GREY)  # Background
@@ -57,4 +63,5 @@ class View:
         # self.draw_coords()
         self.draw_pieces(False)
         self.draw_selected_square()
+        self.draw_legal_moves()
 

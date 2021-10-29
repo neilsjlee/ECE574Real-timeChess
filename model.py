@@ -7,9 +7,12 @@ class Model:
         self.player_color_is_black = False
         self.playing = True
 
-        self.target_square = ""
-        self.true_target = ""
+        self.target_square = None
+        self.target = None
+        self.true_target = None
         self.legal_moves = []
+
+        self.promotion = 'queen'
 
     def reset_board(with_pieces=True):
         def generate_pieces(colour):
@@ -21,7 +24,7 @@ class Model:
             board[0] = generate_pieces("black")
             board[7] = generate_pieces("white")
             board[1] = [Pawn("black") for square in board[1]]
-            board[6] = [Pawn("white") for square in board[6]]
+            # board[6] = [Pawn("white") for square in board[6]]
         return board
 
 
@@ -36,7 +39,7 @@ class Piece:
         self.img_adjust = img_adjust
         self.unbounded = unbounded
 
-    def find_moves(self, board, location, kings, check):
+    def find_moves(self, board, location):
         x, y = location[0], location[1]
         legal_moves = []
         additional = set()
@@ -50,29 +53,23 @@ class Piece:
                 square = board[coords[1]][coords[0]]
                 if self.name != 'pawn' and (square is None or square and square.colour != self.colour) or \
                         self.name == 'pawn' and ((x2 == 0 and square is None) or (x2, y2) in additional):
-                    king = kings[int(self.colour == "black")]
-                    king_pos = coords if king == (x, y) else king
-                    if not board[king[1]][king[0]].in_check(board, king_pos, moved_from=location, moved_to=coords):
-                        legal_moves.append(coords)
-                    if square and square.colour != self.colour or coords not in legal_moves and not check:
+                    legal_moves.append(coords)
+                    if square and square.colour != self.colour or coords not in legal_moves:
                         continue
                     while self.unbounded or self.name == 'pawn' and self.double_move:
                         coords = coords[0] + x2, coords[1] + y2
                         square = board[coords[1]][coords[0]]
-                        if check and board[king[1]][king[0]].in_check(board, king_pos, moved_from=location,
-                                                                      moved_to=coords):
-                            continue
                         if all(i >= 0 for i in coords) and self.name != 'pawn' and (square is None or square and
                                                                                     square.colour != self.colour) or self.name == 'pawn' and (
                                 x2 == 0 and square is None):
                             legal_moves.append(coords)
-                        elif not check:
-                            break
+                        # elif not check:
+                        #     break
                         if self.name == 'pawn' or square and square.colour != self.colour:
                             break
             except IndexError:
                 continue
-        if self.name == 'king' and not check and self.castle_rights and self.castle(board, x, y):
+        if self.name == 'king' and self.castle_rights and self.castle(board, x, y):
             legal_moves.extend(self.castle(board, x, y))
         return legal_moves
 
