@@ -1,4 +1,7 @@
 
+from constants import *
+from datetime import datetime
+
 
 class Model:
 
@@ -11,6 +14,9 @@ class Model:
         self.target = None
         self.true_target = None
         self.legal_moves = []
+        self.movement_list = []
+        self.current_destinations = []
+        self.captures = []
 
         self.promotion = 'queen'
 
@@ -24,8 +30,78 @@ class Model:
             board[0] = generate_pieces("black")
             board[7] = generate_pieces("white")
             board[1] = [Pawn("black") for square in board[1]]
-            # board[6] = [Pawn("white") for square in board[6]]
+            board[6] = [Pawn("white") for square in board[6]]
         return board
+
+    def process_movement(self):
+        for each in self.movement_list:
+            if ((abs(each['current_coordinate_y'] - each['destination'][1]) < 0.01) & (
+                    abs(each['current_coordinate_x'] - each['destination'][0]) < 0.01)) or each['end_time'] < datetime.now():
+                self.movement_list.remove(each)
+                self.board[each['destination'][1]][each['destination'][0]] = each['target']
+                print("done")
+                # self.current_destinations.remove((each['destination'][0], each['destination'][1]))
+                self.complete_movement(each['target'], each['origin'], each['destination'])
+                break
+            else:
+                each['current_coordinate_x'] += each['speed_x']
+                each['current_coordinate_y'] += each['speed_y']
+
+    def complete_movement(self, target, origin, destination):
+        self.current_destinations.remove(destination)
+
+        # piece move conditions
+        # for row in self.board:
+#             for piece in row:
+#                 if piece and piece.name == 'pawn' and piece.en_passant:
+#                     piece.en_passant = False
+
+        if target.name == 'pawn':
+            if target.double_move:
+                target.double_move = False
+            if abs(origin[1] - destination[1]) == 2:
+                target.en_passant = True
+            if origin[0] != destination[0] and not self.board[destination[1]][destination[0]]:
+                self.captures.append(self.board[destination[1] - target.direction][destination[0]])
+                # print(captures)
+                # print([destination[1] - target.direction][destination[0]])
+                self.board[destination[1] - target.direction][destination[0]] = None
+            if destination[1] == (0 if target.colour == 'white' else 7):
+                promoting = True
+                piece_dict = {'queen': Queen(target.colour), 'knight': Knight(target.colour),
+                              'rook': Rook(target.colour), 'bishop': Bishop(target.colour)}
+        if target.name == 'king':
+            # kings[int(target.colour == "black")] = destination
+            if target.castle_rights:
+                target.castle_rights = False
+            if destination[0] - origin[0] == 2:
+                self.board[target.back_rank][5] = self.board[target.back_rank][7]
+                self.board[target.back_rank][7] = None
+            if origin[0] - destination[0] == 2:
+                self.board[target.back_rank][3] = self.board[target.back_rank][0]
+                self.board[target.back_rank][0] = None
+        if target.name == 'rook' and target.castle_rights:
+            target.castle_rights = False
+
+        # add any existing piece to captures list
+        if self.board[destination[1]][destination[0]]:
+            self.captures.append(self.board[destination[1]][destination[0]])
+
+        # move piece
+        # if not promoting:
+        #     board[destination[1]][destination[0]] = target
+        # else:
+        #     board[destination[1]][destination[0]] = piece_dict[promotion]
+        #     transcript = transcript[:-1] + f'={promotion[0].upper()} ' if promotion != 'knight' else '=N '
+        self.board[origin[1]][origin[0]] = None
+
+        # any checks with new board status
+        # enemy_king = kings[int(target.colour == "white")]
+        # check = board[enemy_king[1]][enemy_king[0]].in_check(board, enemy_king)
+        # return board, captures, kings, check
+
+    def model_process(self):
+        self.process_movement()
 
 
 class Piece:
@@ -39,7 +115,7 @@ class Piece:
         self.img_adjust = img_adjust
         self.unbounded = unbounded
 
-    def find_moves(self, board, location):
+    def find_moves(self, board, location, current_destinations):
         x, y = location[0], location[1]
         legal_moves = []
         additional = set()
@@ -51,21 +127,20 @@ class Piece:
             try:
                 coords = x + x2, y + y2
                 square = board[coords[1]][coords[0]]
-                if self.name != 'pawn' and (square is None or square and square.colour != self.colour) or \
+                if self.name != 'pawn' and ((square is None or (square and square.colour != self.colour)) and ((coords[0], coords[1]) not in current_destinations)) or \
                         self.name == 'pawn' and ((x2 == 0 and square is None) or (x2, y2) in additional):
                     legal_moves.append(coords)
                     if square and square.colour != self.colour or coords not in legal_moves:
                         continue
-                    while self.unbounded or self.name == 'pawn' and self.double_move:
+                    while self.unbounded or (self.name == 'pawn' and self.double_move):
                         coords = coords[0] + x2, coords[1] + y2
                         square = board[coords[1]][coords[0]]
-                        if all(i >= 0 for i in coords) and self.name != 'pawn' and (square is None or square and
-                                                                                    square.colour != self.colour) or self.name == 'pawn' and (
+                        if all(i >= 0 for i in coords) and self.name != 'pawn' and ((square is None or (square and square.colour != self.colour)) and ((coords[0], coords[1]) not in current_destinations)) or self.name == 'pawn' and (
                                 x2 == 0 and square is None):
                             legal_moves.append(coords)
                         # elif not check:
                         #     break
-                        if self.name == 'pawn' or square and square.colour != self.colour:
+                        if self.name == 'pawn' or square and square.colour != self.colour or ((coords[0], coords[1]) in current_destinations):
                             break
             except IndexError:
                 continue

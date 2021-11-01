@@ -57,11 +57,17 @@ class View:
             else:
                 self.pg.draw.circle(self.screen, ORANGE, (65 + (move[0] * 50), 65 + (move[1] * 50)), 5)
 
+    def draw_moving_piece(self):
+        for each in self.m.movement_list:
+            self.font.render_to(self.screen, (each['target'].img_adjust[0] + int(each['current_coordinate_x'] * 50),
+                                each['target'].img_adjust[1] + int(each['current_coordinate_y'] * 50)), each['target'].image, SILVER)
+
     def view_process(self):
         self.screen.fill(GREY)  # Background
         self.draw_squares()     # Board
         # self.draw_coords()
-        self.draw_pieces(False)
         self.draw_selected_square()
+        self.draw_pieces(False)
+        self.draw_moving_piece()
         self.draw_legal_moves()
 

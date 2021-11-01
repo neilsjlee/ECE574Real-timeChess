@@ -29,6 +29,7 @@ class Main(threading.Thread):
         while self.running:
             self.v.view_process()
             self.c.control_process()
+            self.m.model_process()
 
             for event in pg.event.get():    # Event Handler
                 if event.type == pg.QUIT:
