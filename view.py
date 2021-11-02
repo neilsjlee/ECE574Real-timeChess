@@ -14,13 +14,13 @@ class View:
         self.micro_font = pg.freetype.Font('FreeSerif-4aeK.ttf', 25)
 
     def draw_squares(self):
-        colour_dict = {True: LIGHT, False: DARK}
-        current_colour = True
+        color_dict = {True: LIGHT, False: DARK}
+        current_color = True
         for row in range(8):
             for column in range(8):
-                self.pg.draw.rect(self.screen, colour_dict[current_colour], ((BOARD_MARGIN_X + (column * SQUARE_WIDTH)), BOARD_MARGIN_Y + (row * SQUARE_WIDTH), SQUARE_WIDTH, SQUARE_WIDTH))
-                current_colour = not current_colour
-            current_colour = not current_colour
+                self.pg.draw.rect(self.screen, color_dict[current_color], ((BOARD_MARGIN_X + (column * SQUARE_WIDTH)), BOARD_MARGIN_Y + (row * SQUARE_WIDTH), SQUARE_WIDTH, SQUARE_WIDTH))
+                current_color = not current_color
+            current_color = not current_color
 
     '''
     def draw_coords(self):
@@ -34,17 +34,18 @@ class View:
 
     def draw_pieces(self, process, delta_x=None, delta_y=None, destination=None):
         ###################modified lines
-        if process:
-            piece = self.m.board[destination[1]][destination[0]]
-            self.font.render_to(self.screen, (piece.img_adjust[0] - delta_x + (destination[0] * 50),
-                                piece.img_adjust[1] - delta_y + (destination[1] * 50)), piece.image, SILVER)
+        # if process:
+        #     piece = self.m.board[destination[1]][destination[0]]
+        #     self.font.render_to(self.screen, (piece.img_adjust[0] - delta_x + (destination[0] * 50),
+        #                         piece.img_adjust[1] - delta_y + (destination[1] * 50)), piece.image, SILVER)
         ###################
-        else:
-            for row, pieces in enumerate(self.m.board[::(-1 if self.m.player_color_is_black else 1)]):
-                for square, piece in enumerate(pieces[::(-1 if self.m.player_color_is_black else 1)]):
-                    if piece:
-                        self.font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)),
-                                       piece.image, BLACK)
+        # else:
+        for row, pieces in enumerate(self.m.board[::(-1 if self.m.player_color_is_black else 1)]):
+            for square, piece in enumerate(pieces[::(-1 if self.m.player_color_is_black else 1)]):
+                if piece:
+                    self.font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)), piece.image, BLACK)
+                    if piece.cool_down > 0:
+                        self.micro_font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)), str(int(piece.cool_down)), BLACK)
 
     def draw_selected_square(self):
         if self.m.target_square:
@@ -61,6 +62,10 @@ class View:
         for each in self.m.movement_list:
             self.font.render_to(self.screen, (each['target'].img_adjust[0] + int(each['current_coordinate_x'] * 50),
                                 each['target'].img_adjust[1] + int(each['current_coordinate_y'] * 50)), each['target'].image, SILVER)
+
+    def draw_cool_down(self):
+        for each in self.m.cool_down_list:
+            self.font.render_to()
 
     def view_process(self):
         self.screen.fill(GREY)  # Background

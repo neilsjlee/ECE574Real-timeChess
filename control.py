@@ -37,6 +37,11 @@ class Control:
         self.m.current_destinations.append((destination[0], destination[1]))
         self.m.legal_moves = []
         self.m.board[origin[1]][origin[0]] = None
+        if target.name == 'king':
+            if destination[0] - origin[0] == 2:
+                self.start_new_movement(self.m.board[target.back_rank][7], (7, target.back_rank), (5, target.back_rank), datetime.now())
+            if origin[0] - destination[0] == 2:
+                self.start_new_movement(self.m.board[target.back_rank][0], (0, target.back_rank), (3, target.back_rank), datetime.now())
 
 
         '''
@@ -60,20 +65,19 @@ class Control:
                     if event.button != 3:   # Left mouse button = 1, Mouse Wheel Button = 2, Right mouse button = 3
                         self.m.true_target, self.m.target_square = self.find_square(event.pos[0], event.pos[1])
                         self.m.target = self.m.board[self.m.target_square[1]][self.m.target_square[0]]
-                        # if target and self.m.player_color_is_black == target.colour:
                         if self.m.target:
+                            # and self.m.target.color == self.m.player_color:
                             self.m.legal_moves = self.m.target.find_moves(self.m.board, self.m.target_square, self.m.current_destinations)
+                        else:
+                            self.m.target = None
+                            self.m.legal_moves = []
+                            self.m.target_square = None
                     elif self.m.target_square and self.m.target:    # (i.e. if the right mouse button is pressed,)
                         self.m.true_target, destination = self.find_square(event.pos[0], event.pos[1])
                         if destination in self.m.legal_moves:
                             self.start_new_movement(self.m.target, self.m.target_square, destination, datetime.now())
-                            # action_list = self.start_new_movement(self.m.target, self.m.target_square, destination, datetime.now(),
-                            #                                  action_list, promotion)
-                            # board, captures, kings, check = move_piece(board, target, kings, self.m.target_square, destination,
-                            #                                            captures, promotion)
-
-                            legal_moves = []
                         else:
-                            target_square = None
+                            pass
+                            # self.m.target_square = None
                     else:
-                        target_square = None
+                        self.m.target_square = None

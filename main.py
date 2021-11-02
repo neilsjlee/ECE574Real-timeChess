@@ -24,19 +24,12 @@ class Main(threading.Thread):
 
         self.m = Model()
         self.v = View(pg, self.m, self.screen)
-        self.c = Control(pg, self.m, self.running, )
+        self.c = Control(pg, self.m, self.running)
 
         while self.running:
             self.v.view_process()
             self.c.control_process()
             self.m.model_process()
-
-            for event in pg.event.get():    # Event Handler
-                if event.type == pg.QUIT:
-                    self.running = False
-
-            # for piece in self.model.alive_piece_list:
-            #     pg.draw.rect(self.screen, (255, 0, 0), (piece.x, piece.y, 25, 25))
 
             pg.display.update()
             self.clock.tick(FPS)
