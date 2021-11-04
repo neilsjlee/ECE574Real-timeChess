@@ -33,9 +33,6 @@ class Main(threading.Thread):
         self.v = View(pg, self.m, self.screen)
         self.c = Control(pg, self.m, self.running)
 
-        network_control = NetworkControl(self.c)
-        network_control.start()
-
         while self.running[0]:
             self.v.view_process()
             self.c.control_process()
