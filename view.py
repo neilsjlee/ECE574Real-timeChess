@@ -12,6 +12,7 @@ class View:
         self.pg.freetype.init()
         self.font = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
         self.micro_font = pg.freetype.Font('FreeSerif-4aeK.ttf', 25)
+        self.font2 = pg.font.Font(None, 25)
 
     def draw_squares(self):
         color_dict = {True: LIGHT, False: DARK}
@@ -43,9 +44,21 @@ class View:
         for row, pieces in enumerate(self.m.board[::(-1 if self.m.player_color_is_black else 1)]):
             for square, piece in enumerate(pieces[::(-1 if self.m.player_color_is_black else 1)]):
                 if piece:
-                    self.font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)), piece.image, BLACK)
                     if piece.cool_down > 0:
-                        self.micro_font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)), str(int(piece.cool_down)), BLACK)
+
+                        self.font.render_to(self.screen, (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)), piece.image, LIGHT_GRAY if piece.color == "white" else DARK_GRAY)
+
+                        text = self.font2.render(str(round(piece.cool_down, 1)), True, ORANGE)
+                        text_surface = self.pg.Surface(text.get_size())
+                        text_surface.fill(BLACK)
+                        text_surface.blit(text, (0, 0))
+                        self.screen.blit(text_surface, (BOARD_MARGIN_X + 14 + (square * 50), BOARD_MARGIN_Y + 18 + (row * 50)))
+
+
+                    else:
+                        self.font.render_to(self.screen,
+                                            (piece.img_adjust[0] + (square * 50), piece.img_adjust[1] + (row * 50)),
+                                            piece.image, BLACK)
 
     def draw_selected_square(self):
         if self.m.target_square:
@@ -54,18 +67,14 @@ class View:
     def draw_legal_moves(self):
         for move in self.m.legal_moves:
             if self.m.player_color_is_black:
-                self.pg.draw.circle(self.screen, ORANGE, ((65 + ((7 - move[0]) * 50), 65 + ((7 - move[1]) * 50))), 5)
+                self.pg.draw.circle(self.screen, ORANGE, (65 + ((7 - move[0]) * 50), 65 + ((7 - move[1]) * 50)), 5)
             else:
                 self.pg.draw.circle(self.screen, ORANGE, (65 + (move[0] * 50), 65 + (move[1] * 50)), 5)
 
     def draw_moving_piece(self):
         for each in self.m.movement_list:
             self.font.render_to(self.screen, (each['target'].img_adjust[0] + int(each['current_coordinate_x'] * 50),
-                                each['target'].img_adjust[1] + int(each['current_coordinate_y'] * 50)), each['target'].image, SILVER)
-
-    def draw_cool_down(self):
-        for each in self.m.cool_down_list:
-            self.font.render_to()
+                                each['target'].img_adjust[1] + int(each['current_coordinate_y'] * 50)), each['target'].image, LIGHT_GRAY if each['target'].color == "white" else DARK_GRAY)
 
     def view_process(self):
         self.screen.fill(GREY)  # Background

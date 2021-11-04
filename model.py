@@ -40,8 +40,6 @@ class Model:
             if ((abs(each['current_coordinate_y'] - each['destination'][1]) < 0.01) & (
                     abs(each['current_coordinate_x'] - each['destination'][0]) < 0.01)) or each['end_time'] < datetime.now():
                 self.movement_list.remove(each)
-                self.board[each['destination'][1]][each['destination'][0]] = each['target']
-                print("done")
                 # self.current_destinations.remove((each['destination'][0], each['destination'][1]))
                 self.complete_movement(each['target'], each['origin'], each['destination'])
                 break
@@ -63,6 +61,8 @@ class Model:
                 target.double_move = False
             if abs(origin[1] - destination[1]) == 2:
                 target.en_passant = True
+            else:
+                target.en_passant = False
             if origin[0] != destination[0] and not self.board[destination[1]][destination[0]]:
                 self.captures.append(self.board[destination[1] - target.direction][destination[0]])
                 # print(captures)
@@ -72,6 +72,7 @@ class Model:
                 promoting = True
                 piece_dict = {'queen': Queen(target.color), 'knight': Knight(target.color),
                               'rook': Rook(target.color), 'bishop': Bishop(target.color)}
+                target = Queen(target.color)
         if target.name == 'king':
             # kings[int(target.color == "black")] = destination
             if target.castle_rights:
@@ -89,29 +90,31 @@ class Model:
         if self.board[destination[1]][destination[0]]:
             self.captures.append(self.board[destination[1]][destination[0]])
 
+        self.board[destination[1]][destination[0]] = target
+
         # move piece
         # if not promoting:
         #     board[destination[1]][destination[0]] = target
         # else:
         #     board[destination[1]][destination[0]] = piece_dict[promotion]
         #     transcript = transcript[:-1] + f'={promotion[0].upper()} ' if promotion != 'knight' else '=N '
-        self.board[origin[1]][origin[0]] = None
+        # self.board[origin[1]][origin[0]] = None
 
         # any checks with new board status
         # enemy_king = kings[int(target.color == "white")]
         # check = board[enemy_king[1]][enemy_king[0]].in_check(board, enemy_king)
         # return board, captures, kings, check
-        target.cool_down = 3.00
+        target.cool_down = COOL_DOWN
         self.cool_down_list.append(target)
 
     def process_cool_down(self):
         for each in self.cool_down_list:
             each.cool_down -= PIECE_MOVEMENT_SPEED
-            print(each.cool_down)
             if each.cool_down <= 0:
                 each.cool_down = 0
                 self.cool_down_list.remove(each)
-                print("DONE")
+                if each.name == 'pawn':
+                    each.en_passant = False
 
     def model_process(self):
         self.process_movement()

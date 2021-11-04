@@ -19,24 +19,29 @@ class Control:
             target_square = true_target
         return true_target, target_square
 
-    def start_new_movement(self, target, origin, destination, start_time, promotion=None):
+    def find_target(self, coordinate):
+        return self.m.board[coordinate[1]][coordinate[0]]
+
+    def start_new_movement(self, target, origin, destination, start_time):
         angle = math.atan2((origin[1] - destination[1]), (origin[0] - destination[0]))
 
         self.m.movement_list.append({"target": target,
-                              "origin": origin,
-                              "destination": destination,
-                              "current_coordinate_x": origin[0],
-                              "current_coordinate_y": origin[1],
-                              "start_time": start_time,
-                              "end_time": start_time + timedelta(seconds=(((((origin[0] - destination[0]) ** 2) + (
-                                          (origin[1] - destination[1]) ** 2)) ** (1 / 2)) / PIECE_MOVEMENT_SPEED)/FPS),
-                              "angle": angle,
-                              "speed_x": - math.cos(angle) * PIECE_MOVEMENT_SPEED,
-                              "speed_y": - math.sin(angle) * PIECE_MOVEMENT_SPEED
-                              })
+                                     "origin": origin,
+                                     "destination": destination,
+                                     "current_coordinate_x": origin[0],
+                                     "current_coordinate_y": origin[1],
+                                     "start_time": start_time,
+                                     "end_time": start_time + timedelta(seconds=(((((origin[0] - destination[0]) ** 2) +
+                                                                                   ((origin[1] - destination[1]) ** 2)) ** (1 / 2)) / PIECE_MOVEMENT_SPEED)/FPS),
+                                     "angle": angle,
+                                     "speed_x": - math.cos(angle) * PIECE_MOVEMENT_SPEED,
+                                     "speed_y": - math.sin(angle) * PIECE_MOVEMENT_SPEED
+                                     })
         self.m.current_destinations.append((destination[0], destination[1]))
         self.m.legal_moves = []
         self.m.board[origin[1]][origin[0]] = None
+
+        # Castling
         if target.name == 'king':
             if destination[0] - origin[0] == 2:
                 self.start_new_movement(self.m.board[target.back_rank][7], (7, target.back_rank), (5, target.back_rank), datetime.now())
@@ -65,8 +70,7 @@ class Control:
                     if event.button != 3:   # Left mouse button = 1, Mouse Wheel Button = 2, Right mouse button = 3
                         self.m.true_target, self.m.target_square = self.find_square(event.pos[0], event.pos[1])
                         self.m.target = self.m.board[self.m.target_square[1]][self.m.target_square[0]]
-                        if self.m.target:
-                            # and self.m.target.color == self.m.player_color:
+                        if self.m.target and self.m.target.cool_down <= 0 and self.m.target.color == self.m.player_color:
                             self.m.legal_moves = self.m.target.find_moves(self.m.board, self.m.target_square, self.m.current_destinations)
                         else:
                             self.m.target = None

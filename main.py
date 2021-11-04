@@ -2,10 +2,11 @@
 import threading
 import pygame as pg
 
+from constants import *
 from model import Model
 from view import View
 from control import Control
-from constants import *
+from network_control import NetworkControl
 
 
 class Main(threading.Thread):
@@ -13,6 +14,12 @@ class Main(threading.Thread):
         threading.Thread.__init__(self)
 
         self.running = True
+        self.clock = None
+        self.screen = None
+        self.m = None
+        self.v = None
+        self.c = None
+
 
     # Override
     def run(self):
@@ -25,6 +32,9 @@ class Main(threading.Thread):
         self.m = Model()
         self.v = View(pg, self.m, self.screen)
         self.c = Control(pg, self.m, self.running)
+
+        network_control = NetworkControl(self.c)
+        network_control.start()
 
         while self.running:
             self.v.view_process()
