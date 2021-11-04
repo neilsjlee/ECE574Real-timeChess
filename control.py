@@ -64,7 +64,8 @@ class Control:
     def control_process(self):
         for event in self.pg.event.get():
             if event.type == self.pg.QUIT:
-                self.running = False
+                self.running[0] = False
+                print("QUIT")
             if event.type == self.pg.MOUSEBUTTONDOWN:
                 if self.m.playing and BOARD_MARGIN_X + SQUARE_WIDTH * 8 >= event.pos[0] >= BOARD_MARGIN_X and BOARD_MARGIN_Y + SQUARE_WIDTH * 8 >= event.pos[1] >= BOARD_MARGIN_Y:
                     if event.button != 3:   # Left mouse button = 1, Mouse Wheel Button = 2, Right mouse button = 3

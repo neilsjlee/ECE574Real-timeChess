@@ -13,7 +13,7 @@ class Main(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
 
-        self.running = True
+        self.running = [True]
         self.clock = None
         self.screen = None
         self.m = None
@@ -36,7 +36,7 @@ class Main(threading.Thread):
         network_control = NetworkControl(self.c)
         network_control.start()
 
-        while self.running:
+        while self.running[0]:
             self.v.view_process()
             self.c.control_process()
             self.m.model_process()

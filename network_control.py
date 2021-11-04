@@ -3,6 +3,9 @@ import time
 from datetime import datetime
 import requests
 import socket
+import paho.mqtt.client as mqtt
+import random
+import string
 import json
 
 
@@ -12,8 +15,18 @@ class NetworkControl(threading.Thread):
         self.c = control
         self.my_public_ip = ""
         self.my_private_ip = ""
-        self.server_socket = None
-        self.PORT = 2100
+        # self.server_socket = None
+        self.my_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+        self.mqtt = None
+        self.am_i_host = True
+
+        self.MQTT_BROKER_IP = '3.139.21.0'
+        self.MQTT_BROKER_PORT = 1883
+
+    def start_mqtt_topic_as_host(self):
+        self.mqtt = mqtt.Client(self.my_id)
+        self.mqtt.connect(self.MQTT_BROKER_IP, self.MQTT_BROKER_PORT)
+        self.mqtt.publish("test", 'host entered')
 
     def start_new_movement_from_client(self, origin, destination, start_time):
         target = self.c.find_target(origin)
@@ -23,12 +36,13 @@ class NetworkControl(threading.Thread):
         self.my_public_ip = requests.get('https://api.ipify.org').text
         print("My Public IP is ", self.my_public_ip)
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # 3
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 0))
         self.my_private_ip = s.getsockname()[0]
         s.close()
         print("My Private IP is ", self.my_private_ip)
 
+    '''
     def send_ack_and_setting_socket(self):
         HOST = mobile_app_private_ip
         PORT = 3000
@@ -49,6 +63,7 @@ class NetworkControl(threading.Thread):
         self.server_socket.bind((socket.gethostname(), 2121))
         # become a server socket
         self.server_socket.listen(5)
+    '''
 
     def test(self):
         time.sleep(5)
@@ -63,6 +78,8 @@ class NetworkControl(threading.Thread):
 
         time.sleep(2)
 
+        '''
+        # Test Socket Host
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('0.0.0.0', self.PORT))
             s.listen()
@@ -75,6 +92,7 @@ class NetworkControl(threading.Thread):
                     if not data:
                         break
                     connection.sendall(data)
+        '''
 
 
 
