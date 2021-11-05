@@ -5,11 +5,13 @@ from datetime import datetime
 
 class Model:
 
-    def __init__(self):
+    def __init__(self, mode):
         self.board = self.reset_board()
-        self.player_color_is_black = False
-        self.player_color = "white"
         self.playing = True
+        self.mode = mode
+
+        self.player_color_is_black = False
+        self.player_color = 'white' if self.mode == 'host' else 'black'
 
         self.target_square = None
         self.target = None

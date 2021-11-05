@@ -10,6 +10,7 @@ class Control:
         self.pg = pg
         self.m = model
         self.running = running
+        self.mode = self.m.mode
 
     def find_square(self, x, y):
         true_target = int((x - BOARD_MARGIN_X) / SQUARE_WIDTH), int((y - BOARD_MARGIN_Y) / SQUARE_WIDTH)

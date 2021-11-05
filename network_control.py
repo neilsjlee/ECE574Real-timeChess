@@ -13,6 +13,7 @@ class NetworkControl(threading.Thread):
     def __init__(self, control):
         threading.Thread.__init__(self)
         self.c = control
+        self.mode = self.c.mode
         self.my_public_ip = ""
         self.my_private_ip = ""
         # self.server_socket = None
@@ -26,7 +27,8 @@ class NetworkControl(threading.Thread):
     def start_mqtt_topic_as_host(self):
         self.mqtt = mqtt.Client(self.my_id)
         self.mqtt.connect(self.MQTT_BROKER_IP, self.MQTT_BROKER_PORT)
-        self.mqtt.publish("test", 'host entered')
+        # self.mqtt.publish(self.my_id, 'host entered')
+        self.mqtt.publish('server', self.my_id)
 
     def start_new_movement_from_client(self, origin, destination, start_time):
         target = self.c.find_target(origin)
