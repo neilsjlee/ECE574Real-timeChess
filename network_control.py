@@ -10,32 +10,55 @@ import json
 
 
 class NetworkControl(threading.Thread):
-    def __init__(self, control):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.c = control
-        self.mode = self.c.mode
+        self.c = None
+        self.mode = ""
         self.my_public_ip = ""
         self.my_private_ip = ""
-        # self.server_socket = None
-        self.my_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-        self.mqtt = None
+
+        self.mqtt_handle = None
         self.am_i_host = True
+
+        self.my_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+        self.opponent_id = ""
 
         self.MQTT_BROKER_IP = '3.139.21.0'
         self.MQTT_BROKER_PORT = 1883
+        self.GAME_LOBBY_DEFAULT_TOPIC = 'game_lobby'
+        self.IN_GAME_DEFAULT_TOPIC = 'in_game'
 
-    def start_mqtt_topic_as_host(self):
-        self.mqtt = mqtt.Client(self.my_id)
-        self.mqtt.connect(self.MQTT_BROKER_IP, self.MQTT_BROKER_PORT)
-        # self.mqtt.publish(self.my_id, 'host entered')
-        self.mqtt.publish('server', self.my_id)
+        self.lock = threading.Lock()
 
-    def send(self, data):
-        self.mqtt.publish()
+        self.outgoing_message_list = []
+        self.outgoing_request_list = []
 
-    def start_new_movement_from_client(self, origin, destination, start_time):
-        target = self.c.find_target(origin)
-        self.c.start_new_movement(target, origin, destination, start_time)
+    def get_control_class(self, control):
+        self.c = control
+        self.mode = self.c.mode
+
+    def p(self):
+        self.lock.acquire()
+
+    def v(self):
+        self.lock.release()
+
+    def new_movement_message(self, origin, destination, start_time):
+        self.p()
+        self.outgoing_message_list.append([origin, destination, start_time])
+        self.v()
+
+    def send_movement_message(self):
+        if len(self.outgoing_message_list) > 0:
+            self.p()
+            new_message = self.outgoing_message_list.pop(0)
+            self.v()
+            self.mqtt_handle.publish(json.dumps({"origin": new_message[0], "destination": new_message[1], "start_time": new_message[2]}))
+
+    def send_request_message(self):
+        if len(self.outgoing_request_list) > 0:
+            new_message = self.outgoing_request_list.pop(0)
+            self.mqtt_handle.publish(json.dumps({"origin": new_message[0], "destination": new_message[1], "start_time": new_message[2]}))
 
     def get_my_ip_addresses(self):
         self.my_public_ip = requests.get('https://api.ipify.org').text
@@ -47,57 +70,75 @@ class NetworkControl(threading.Thread):
         s.close()
         print("My Private IP is ", self.my_private_ip)
 
-    '''
-    def send_ack_and_setting_socket(self):
-        HOST = mobile_app_private_ip
-        PORT = 3000
+    def connect(self):
+        self.mqtt_handle = mqtt.Client(self.my_id)
+        self.mqtt_handle.connect(self.MQTT_BROKER_IP, self.MQTT_BROKER_PORT)
 
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect((HOST, PORT))
-        data = {
-            'public_ip': public_ip,
-            'private_ip': private_ip
-        }
-        data_string = json.dumps(data)
-        client_socket.sendall(data_string.encode('utf-8'))
-        client_socket.close()
+    def send_response(self, client_id, response_code, data=None):
+        if data is None:
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + client_id, json.dumps({"response": response_code}))
+        else:
+            payload_dict = {"response": response_code}
+            payload_dict.update(data)
+            print(payload_dict)
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict))
 
-    def socket_server(self):
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # bind the socket to a public host, and a well-known port
-        self.server_socket.bind((socket.gethostname(), 2121))
-        # become a server socket
-        self.server_socket.listen(5)
-    '''
+    def send_request(self, request_code, data=None):
+        if data is None:
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id, json.dumps({"request": request_code}))
+        else:
+            payload_dict = {"response": request_code}
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id, json.dumps(payload_dict.update(data)))
+
+    def add_message_listener(self):
+        def on_message(client, userdata, msg):
+            print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+
+            client_id = msg.topic.split('/')[1]
+            data = json.loads(msg.payload.decode())
+            if "request" in data:
+                if data["request"] == "start_host":
+                    print(data["request"])
+                    self.send_response(client_id, "ack_start_host")
+                    self.connected_hosts.append(client_id)
+                    print("Connected Hosts:\t ")
+                    for each in self.connected_hosts:
+                        print("\t" + each)
+                if data["request"] == "start_client":
+                    self.send_response(client_id, "ack_start_client", {"hosts": self.connected_hosts})
+                    self.connected_clients.append(client_id)
+
+        self.mqtt_handle.on_message = on_message
+
+    def start_new_movement_from_client(self, origin, destination, start_time):
+        target = self.c.find_target(origin)
+        if target:
+            self.c.start_new_movement_from_network_controller(target, origin, destination, start_time)
+        else:
+            print("Target piece does not exist")
 
     def test(self):
-        time.sleep(5)
         temp_origin = (1, 1)
         temp_destination = (1, 2)
         self.start_new_movement_from_client(temp_origin, temp_destination, datetime.now())
 
     def run(self):
-        # self.test()
+        self.connect()
+        self.mqtt_handle.subscribe(self.GAME_LOBBY_DEFAULT_TOPIC + "/#")
 
-        self.get_my_ip_addresses()
+        self.mqtt_handle.loop_start()
 
-        time.sleep(2)
+        alive_check_interval = time.time()
 
-        '''
-        # Test Socket Host
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('0.0.0.0', self.PORT))
-            s.listen()
-            connection, address = s.accept()
-            with connection:
-                print('Connected by', address)
-                while True:
-                    data = connection.recv(1024)
-                    print("received data: ", data, datetime.now())
-                    if not data:
-                        break
-                    connection.sendall(data)
-        '''
+        while True:
+            current_time = time.time()
+            if current_time - alive_check_interval > 5:
+                self.test()
+                alive_check_interval = current_time
+
+            self.send_movement_message()
+
+            time.sleep(0.1)
 
 
 

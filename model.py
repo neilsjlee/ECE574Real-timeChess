@@ -50,7 +50,10 @@ class Model:
                 each['current_coordinate_y'] += each['speed_y']
 
     def complete_movement(self, target, origin, destination):
-        self.current_destinations.remove(destination)
+        try:
+            self.current_destinations.remove(destination)
+        except:
+            pass
 
         # piece move conditions
         # for row in self.board:

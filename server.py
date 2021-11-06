@@ -11,30 +11,30 @@ class Server:
         self.DEFAULT_TOPIC = 'game_lobby'
         self.MY_ID = 'server'
 
-        self.client = None
+        self.mqtt_handle = None
 
         self.connected_hosts = []
         self.connected_clients = []
 
     def connect(self):
-        self.client = mqtt.Client(self.MY_ID)
-        self.client.connect(self.MY_IP, self.MY_PORT)
+        self.mqtt_handle = mqtt.Client(self.MY_ID)
+        self.mqtt_handle.connect(self.MY_IP, self.MY_PORT)
 
     def send_response(self, client_id, response_code, data=None):
         if data is None:
-            self.client.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"response": response_code}))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"response": response_code}))
         else:
             payload_dict = {"response": response_code}
             payload_dict.update(data)
             print(payload_dict)
-            self.client.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict))
 
     def send_request(self, client_id, request_code, data=None):
         if data is None:
-            self.client.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"request": request_code}))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"request": request_code}))
         else:
             payload_dict = {"response": request_code}
-            self.client.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict.update(data)))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict.update(data)))
 
     def subscribe(self):
         def on_message(client, userdata, msg):
@@ -56,13 +56,13 @@ class Server:
 
             # print('[ERROR] UNABLE TO PROCESS AN INVALID MESSAGE - Received message is not JSON')
 
-        self.client.subscribe(self.DEFAULT_TOPIC + "/#")
-        self.client.on_message = on_message
+        self.mqtt_handle.subscribe(self.DEFAULT_TOPIC + "/#")
+        self.mqtt_handle.on_message = on_message
 
     def run(self):
         self.connect()
         self.subscribe()
-        self.client.loop_start()
+        self.mqtt_handle.loop_start()
 
         alive_check_interval = time.time()
 

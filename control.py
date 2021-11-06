@@ -1,3 +1,4 @@
+import threading
 
 from constants import *
 from datetime import datetime, timedelta
@@ -11,6 +12,16 @@ class Control:
         self.m = model
         self.running = running
         self.mode = self.m.mode
+
+        self.opponent_movement_list = []
+
+        self.lock = threading.Lock()
+
+    def p(self):
+        self.lock.acquire()
+
+    def v(self):
+        self.lock.release()
 
     def find_square(self, x, y):
         true_target = int((x - BOARD_MARGIN_X) / SQUARE_WIDTH), int((y - BOARD_MARGIN_Y) / SQUARE_WIDTH)
@@ -38,8 +49,6 @@ class Control:
                                      "speed_x": - math.cos(angle) * PIECE_MOVEMENT_SPEED,
                                      "speed_y": - math.sin(angle) * PIECE_MOVEMENT_SPEED
                                      })
-        self.m.current_destinations.append((destination[0], destination[1]))
-        self.m.legal_moves = []
         self.m.board[origin[1]][origin[0]] = None
 
         # Castling
@@ -49,18 +58,22 @@ class Control:
             if origin[0] - destination[0] == 2:
                 self.start_new_movement(self.m.board[target.back_rank][0], (0, target.back_rank), (3, target.back_rank), datetime.now())
 
+    def start_new_movement_from_local_controller(self, target, origin, destination, start_time):
+        self.start_new_movement(target, origin, destination, start_time)
+        self.m.current_destinations.append((destination[0], destination[1]))
+        self.m.legal_moves = []
 
-        '''
-        if not action:
-            action.append([target, destination, promotion])
-        elif any((piece[0] == target) and (piece[1] == destination) for piece in action):
-            pass
-        else:
-            [action.remove(item) for item in action if item[0] == target]
-            action.append([target, destination, promotion])
-        return action
-        # print(movement_list)
-        '''
+    def start_new_movement_from_network_controller(self, target, origin, destination, start_time):
+        self.p()
+        self.opponent_movement_list.append([target, origin, destination, start_time])
+        self.v()
+
+    def process_movement_from_network_controller(self):
+        if len(self.opponent_movement_list) > 0:
+            self.p()
+            new_movement = self.opponent_movement_list.pop(0)
+            self.v()
+            self.start_new_movement(new_movement[0], new_movement[1], new_movement[2], new_movement[3])
 
     def control_process(self):
         for event in self.pg.event.get():
@@ -81,9 +94,10 @@ class Control:
                     elif self.m.target_square and self.m.target:    # (i.e. if the right mouse button is pressed,)
                         self.m.true_target, destination = self.find_square(event.pos[0], event.pos[1])
                         if destination in self.m.legal_moves:
-                            self.start_new_movement(self.m.target, self.m.target_square, destination, datetime.now())
+                            self.start_new_movement_from_local_controller(self.m.target, self.m.target_square, destination, datetime.now())
                         else:
                             pass
                             # self.m.target_square = None
                     else:
                         self.m.target_square = None
+        self.process_movement_from_network_controller()

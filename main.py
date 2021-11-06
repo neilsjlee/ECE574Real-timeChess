@@ -12,7 +12,7 @@ import tkinter as tk
 
 
 class Main(threading.Thread):
-    def __init__(self):
+    def __init__(self, n_c):
         threading.Thread.__init__(self)
 
         self.running = [True]
@@ -21,6 +21,7 @@ class Main(threading.Thread):
         self.m = None
         self.v = None
         self.c = None
+        self.n_c = n_c
 
         self.root = None
 
@@ -45,12 +46,13 @@ class Main(threading.Thread):
     def host_button(self):
         self.mode = 'host'
         print("Mode: host")
-        self.root.destroy()
+        # self.n_c.
+        # self.root.destroy()
 
     def client_button(self):
         self.mode = 'client'
         print("Mode: client")
-        self.root.destroy()
+        # self.root.destroy()
 
     # Override
     def run(self):
@@ -64,8 +66,7 @@ class Main(threading.Thread):
         self.v = View(pg, self.m, self.screen)
         self.c = Control(pg, self.m, self.running)
 
-        network_control = NetworkControl(self.c)
-        network_control.start()
+        self.n_c.get_control_class(self.c)
 
         while self.running[0]:
             self.v.view_process()
@@ -80,10 +81,10 @@ class Main(threading.Thread):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-
-    main = Main()
+    network_control = NetworkControl()
+    network_control.start()
+    main = Main(network_control)
     main.ui()
     if main.mode == 'host' or main.mode == 'client':
         main.start()
-
 
