@@ -30,6 +30,9 @@ class NetworkControl(threading.Thread):
         # self.mqtt.publish(self.my_id, 'host entered')
         self.mqtt.publish('server', self.my_id)
 
+    def send(self, data):
+        self.mqtt.publish()
+
     def start_new_movement_from_client(self, origin, destination, start_time):
         target = self.c.find_target(origin)
         self.c.start_new_movement(target, origin, destination, start_time)
