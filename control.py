@@ -7,9 +7,10 @@ import math
 
 class Control:
 
-    def __init__(self, pg, model, running):
+    def __init__(self, pg, model, network_control, running):
         self.pg = pg
         self.m = model
+        self.n_c = network_control
         self.running = running
         self.mode = self.m.mode
 
@@ -59,6 +60,7 @@ class Control:
                 self.start_new_movement(self.m.board[target.back_rank][0], (0, target.back_rank), (3, target.back_rank), datetime.now())
 
     def start_new_movement_from_local_controller(self, target, origin, destination, start_time):
+        self.n_c.new_movement_message(origin, destination, start_time)
         self.start_new_movement(target, origin, destination, start_time)
         self.m.current_destinations.append((destination[0], destination[1]))
         self.m.legal_moves = []

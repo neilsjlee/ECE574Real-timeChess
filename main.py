@@ -64,7 +64,7 @@ class Main(threading.Thread):
 
         self.m = Model(self.mode)
         self.v = View(pg, self.m, self.screen)
-        self.c = Control(pg, self.m, self.running)
+        self.c = Control(pg, self.m, self.n_c, self.running)
 
         self.n_c.get_control_class(self.c)
 
