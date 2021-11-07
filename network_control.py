@@ -125,10 +125,14 @@ class NetworkControl(threading.Thread):
                         else:
                             print("No host is available")
             elif message_category == "in_game":
-                opponent = message_topic_list[2]
                 if "request" in data:
                     if data["request"] == "join":
                         self.opponent_id = data["id"]
+                        self.mqtt_handle.publish(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + self.mode,
+                                                 json.dumps({"response": "welcome"}))
+                        self.in_game_flag = True
+                if "response" in data:
+                    if data["response"] == "welcome":
                         self.in_game_flag = True
                 elif "origin" in data:
                     self.start_new_movement_from_client(tuple(data["origin"]), tuple(data["destination"]), datetime.fromtimestamp(data["start_time"]))
@@ -162,10 +166,8 @@ class NetworkControl(threading.Thread):
             if not self.in_game_flag:                       # Game Lobby (Initial Setting)
                 if self.mode == "host":
                     self.host_id = self.my_id
-                    self.in_game_flag = True
                     self.mqtt_handle.subscribe(
                         self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
-                    print(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
                 elif self.mode == "client":
                     pass
                     # self.host_id =
