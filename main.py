@@ -1,6 +1,8 @@
 
 import threading
 import pygame as pg
+import tkinter as tk
+import json
 
 from constants import *
 from model import Model
@@ -8,7 +10,6 @@ from view import View
 from control import Control
 from network_control import NetworkControl
 
-import tkinter as tk
 
 
 class Main(threading.Thread):
@@ -45,14 +46,15 @@ class Main(threading.Thread):
 
     def host_button(self):
         self.mode = 'host'
-        print("Mode: host")
-        # self.n_c.
-        # self.root.destroy()
+        self.n_c.mode = self.mode
+        self.n_c.new_request_message("start_host")
+        self.root.destroy()
 
     def client_button(self):
         self.mode = 'client'
-        print("Mode: client")
-        # self.root.destroy()
+        self.n_c.mode = self.mode
+        self.n_c.new_request_message("start_client")
+        self.root.destroy()
 
     # Override
     def run(self):

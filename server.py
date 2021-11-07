@@ -10,6 +10,8 @@ class Server:
         self.MY_IP = '3.139.21.0'
         self.DEFAULT_TOPIC = 'game_lobby'
         self.MY_ID = 'server'
+        self.FROM_SERVER = "/from_server"
+        self.TO_SERVER = "/from_server"
 
         self.mqtt_handle = None
 
@@ -22,19 +24,19 @@ class Server:
 
     def send_response(self, client_id, response_code, data=None):
         if data is None:
-            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"response": response_code}))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id + self.FROM_SERVER, json.dumps({"response": response_code}))
         else:
             payload_dict = {"response": response_code}
             payload_dict.update(data)
             print(payload_dict)
-            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id + self.FROM_SERVER, json.dumps(payload_dict))
 
     def send_request(self, client_id, request_code, data=None):
         if data is None:
-            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id, json.dumps({"request": request_code}))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id + self.FROM_SERVER, json.dumps({"request": request_code}))
         else:
             payload_dict = {"response": request_code}
-            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id, json.dumps(payload_dict.update(data)))
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id + self.FROM_SERVER, json.dumps(payload_dict.update(data)))
 
     def subscribe(self):
         def on_message(client, userdata, msg):
@@ -53,6 +55,9 @@ class Server:
                 if data["request"] == "start_client":
                     self.send_response(client_id, "ack_start_client", {"hosts": self.connected_hosts})
                     self.connected_clients.append(client_id)
+            elif "response" in data:
+                if data["response"] == "ok":
+                    self.connected_hosts.append(client_id)
 
             # print('[ERROR] UNABLE TO PROCESS AN INVALID MESSAGE - Received message is not JSON')
 
@@ -73,6 +78,7 @@ class Server:
                 alive_check_interval = current_time
                 for each in self.connected_hosts:
                     self.send_request(each, "status")
+                self.connected_hosts.clear()
             time.sleep(0.1)
 
 
