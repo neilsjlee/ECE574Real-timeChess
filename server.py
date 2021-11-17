@@ -11,7 +11,7 @@ class Server:
         self.DEFAULT_TOPIC = 'game_lobby'
         self.MY_ID = 'server'
         self.FROM_SERVER = "/from_server"
-        self.TO_SERVER = "/from_server"
+        self.TO_SERVER = "/to_server"
 
         self.mqtt_handle = None
 

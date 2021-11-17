@@ -11,7 +11,6 @@ from control import Control
 from network_control import NetworkControl
 
 
-
 class Main(threading.Thread):
     def __init__(self, n_c):
         threading.Thread.__init__(self)

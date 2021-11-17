@@ -29,7 +29,7 @@ class NetworkControl(threading.Thread):
         self.MQTT_BROKER_PORT = 1883
         self.GAME_LOBBY_DEFAULT_TOPIC = 'game_lobby'
         self.FROM_SERVER = "/from_server"
-        self.TO_SERVER = "/from_server"
+        self.TO_SERVER = "/to_server"
         self.IN_GAME_DEFAULT_TOPIC = 'in_game'
 
         self.lock = threading.Lock()
@@ -87,12 +87,12 @@ class NetworkControl(threading.Thread):
 
     def send_response(self, response_code, data=None):
         if data is None:
-            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.FROM_SERVER, json.dumps({"response": response_code}))
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps({"response": response_code}))
         else:
             payload_dict = {"response": response_code}
             payload_dict.update(data)
             print(payload_dict)
-            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id, json.dumps(payload_dict))
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict))
 
     def send_request(self, request_code, data=None):
         if data is None:
