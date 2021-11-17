@@ -166,8 +166,7 @@ class NetworkControl(threading.Thread):
             if not self.in_game_flag:                       # Game Lobby (Initial Setting)
                 if self.mode == "host":
                     self.host_id = self.my_id
-                    self.mqtt_handle.subscribe(
-                        self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
+                    self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
                 elif self.mode == "client":
                     pass
                     # self.host_id =

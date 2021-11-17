@@ -2,13 +2,13 @@
 import threading
 import pygame as pg
 import tkinter as tk
-import json
 
 from constants import *
 from model import Model
 from view import View
 from control import Control
 from network_control import NetworkControl
+from game_lobby_ui import GameLobbyUI
 
 
 class Main(threading.Thread):
@@ -86,6 +86,11 @@ if __name__ == '__main__':
     network_control.start()
     main = Main(network_control)
     main.ui()
+
+    game_lobby_ui = GameLobbyUI()
+    game_lobby_ui.set_network_control_handler(network_control)
+    game_lobby_ui.run()
+
     if main.mode == 'host' or main.mode == 'client':
         main.start()
 
