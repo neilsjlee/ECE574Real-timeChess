@@ -12,7 +12,10 @@ import json
 class NetworkControl(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+
         self.c = None
+        self.game_lobby_ui = None
+
         self.in_game_flag = False
         self.mode = ""
         self.my_public_ip = ""
@@ -40,6 +43,9 @@ class NetworkControl(threading.Thread):
     def get_control_class(self, control):
         self.c = control
         self.mode = self.c.mode
+
+    def set_game_lobby_ui_handler(self, game_lobby_ui_handler):
+        self.game_lobby_ui = game_lobby_ui_handler
 
     def p(self):
         self.lock.acquire()
@@ -82,7 +88,7 @@ class NetworkControl(threading.Thread):
         print("My Private IP is ", self.my_private_ip)
 
     def connect(self):
-        self.mqtt_handle = mqtt.Client(self.my_id)
+        self.mqtt_handle = mqtt.Client()
         self.mqtt_handle.connect(self.MQTT_BROKER_IP, self.MQTT_BROKER_PORT)
 
     def send_response(self, response_code, data=None):
@@ -110,7 +116,7 @@ class NetworkControl(threading.Thread):
             data = json.loads(msg.payload.decode())
             if message_category == "game_lobby":
                 if "request" in data:
-                    if data["request"] == "status":
+                    if data["request"] == "status":     # ACK response to server's status check request
                         self.send_response("ok")
                 elif "response" in data:
                     if data["response"] == "ack_start_client":
@@ -122,6 +128,11 @@ class NetworkControl(threading.Thread):
                             self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/host")
                             self.in_game_flag = True
                             # NEED TO IMPLEMENT AN GUI FOR SELECTING A HOST
+                        else:
+                            print("No host is available")
+                    if data["response"] == "ack_fetch_available_hosts":
+                        if len(data["hosts"]) > 0:
+                            self.game_lobby_ui.update_game_list(data["hosts"])
                         else:
                             print("No host is available")
             elif message_category == "in_game":
@@ -146,10 +157,10 @@ class NetworkControl(threading.Thread):
         else:
             print("Target piece does not exist")
 
-    def test(self):
-        temp_origin = (1, 1)
-        temp_destination = (1, 2)
-        self.start_new_movement_from_client(temp_origin, temp_destination, datetime.now())
+    def update_user_id(self, new_id):
+        self.mqtt_handle.unsubscribe(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.FROM_SERVER)
+        self.my_id = new_id
+        self.mqtt_handle.subscribe(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.FROM_SERVER)
 
     def run(self):
         self.connect()
@@ -175,7 +186,6 @@ class NetworkControl(threading.Thread):
             else:                                           # In Game
                 current_time = time.time()
                 if current_time - alive_check_interval > 5:
-                    # self.test()
                     alive_check_interval = current_time
 
                 self.send_movement_message()

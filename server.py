@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 import paho.mqtt.client as mqtt
 import json
 
@@ -54,6 +53,9 @@ class Server:
                         print("\t" + each)
                 if data["request"] == "start_client":
                     self.send_response(client_id, "ack_start_client", {"hosts": self.connected_hosts})
+                    self.connected_clients.append(client_id)
+                if data["request"] == "fetch_available_hosts":
+                    self.send_response(client_id, "ack_fetch_available_hosts", {"hosts": self.connected_hosts})
                     self.connected_clients.append(client_id)
             elif "response" in data:
                 if data["response"] == "ok":

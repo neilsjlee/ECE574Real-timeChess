@@ -11,9 +11,8 @@ from network_control import NetworkControl
 from game_lobby_ui import GameLobbyUI
 
 
-class Main(threading.Thread):
+class Main:
     def __init__(self, n_c):
-        threading.Thread.__init__(self)
 
         self.running = [True]
         self.clock = None
@@ -25,35 +24,7 @@ class Main(threading.Thread):
 
         self.root = None
 
-        self.mode = ''
-
-    def ui(self):
-        self.root = tk.Tk()
-        self.root.title("Real-time Chess Client Program")
-
-        main_frame = tk.Frame(self.root)
-        main_frame.grid(row=0, column=0)
-
-        btn_host = tk.Button(main_frame, text="Host", width=50, height=20, command=self.host_button)
-        btn_host.grid(row=0, column=0)
-
-        btn_client = tk.Button(main_frame, text="Client", width=50, height=20, command=self.client_button)
-        btn_client.grid(row=0, column=1)
-
-        self.root.pack_propagate(0)
-        self.root.mainloop()
-
-    def host_button(self):
-        self.mode = 'host'
-        self.n_c.mode = self.mode
-        self.n_c.new_request_message("start_host")
-        self.root.destroy()
-
-    def client_button(self):
         self.mode = 'client'
-        self.n_c.mode = self.mode
-        self.n_c.new_request_message("start_client")
-        self.root.destroy()
 
     # Override
     def run(self):
@@ -84,13 +55,16 @@ class Main(threading.Thread):
 if __name__ == '__main__':
     network_control = NetworkControl()
     network_control.start()
-    main = Main(network_control)
-    main.ui()
+    # main.ui()
 
-    game_lobby_ui = GameLobbyUI()
-    game_lobby_ui.set_network_control_handler(network_control)
-    game_lobby_ui.run()
+    while True:
+        game_lobby_ui = GameLobbyUI()
+        game_lobby_ui.set_network_control_handler(network_control)
+        network_control.set_game_lobby_ui_handler(game_lobby_ui)
+        game_lobby_ui.run()
 
-    if main.mode == 'host' or main.mode == 'client':
-        main.start()
+        if True:
+            main = Main(network_control)
+            main.run()
+
 

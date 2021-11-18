@@ -6,6 +6,7 @@ class GameLobbyUI:
         # Class Variable Init
         self.network_control_handler = None
         self.game_list = []
+        self.id = ""
 
         # UI Component Init
         self.root = tk.Tk()
@@ -26,7 +27,8 @@ class GameLobbyUI:
         self.user_id_label = tk.Label(self.user_id_frame, text="USER ID: ")
         self.user_id_label.grid(row=0, column=0, sticky="e")
 
-        self.user_id_entry = tk.Entry(self.user_id_frame)
+        self.user_id_var = tk.StringVar()
+        self.user_id_entry = tk.Entry(self.user_id_frame, textvariable=self.user_id_var)
         self.user_id_entry.grid(row=0, column=1, sticky="e")
 
         self.game_list_frame = tk.Frame(self.main_frame)
@@ -50,7 +52,7 @@ class GameLobbyUI:
         self.client_button = tk.Button(self.buttons_frame, text="Join Game", command=self.client_button, height=2, width=15)
         self.client_button.grid(row=0, column=1, sticky='nsew', padx=5)
 
-        self.refresh_button = tk.Button(self.buttons_frame, text="\u21BA", command=self.client_button, height=2, font=('Times', 14))
+        self.refresh_button = tk.Button(self.buttons_frame, text="\u21BA", command=self.refresh_game_list, height=2, font=('Times', 14))
         self.refresh_button.grid(row=0, column=2, sticky='nsew', padx=5)
 
         self.buttons_frame.grid_columnconfigure(0, weight=2)
@@ -60,27 +62,52 @@ class GameLobbyUI:
         self.bottom_label = tk.Label(self.main_frame, text="")
         self.bottom_label.grid(row=5, column=0)
 
-
         self.root.pack_propagate(0)
 
     def set_network_control_handler(self, n_c):
         self.network_control_handler = n_c
+        self.id = self.network_control_handler.my_id
+        self.user_id_var.set(self.id)
+
+    def block_ui(self, exception=None):
+        self.game_list_listbox.config(self.game_list_listbox.config(bg='light grey', state='disabled'))
+        self.host_button.config(state='disabled')
+        self.client_button.config(state='disabled')
+        self.user_id_entry.config(state='disabled')
+        self.refresh_button.config(state='disabled')
+        if exception is not None:
+            temp = exception['text']
+            exception.config(text=temp+"...", relief=tk.SUNKEN, state='normal')
+
+    def unblock_ui(self, exception=None):
+        self.game_list_listbox.config(self.game_list_listbox.config(bg='white', state='normal'))
+        self.host_button.config(state='normal')
+        self.client_button.config(state='normal')
+        self.user_id_entry.config(state='normal')
+        self.refresh_button.config(state='normal')
+        if exception is not None:
+            temp = exception['text']
+            temp = temp.removesuffix("...")
+            exception.config(text=temp, relief=tk.RAISED)
 
     def host_button(self):
         if self.host_button['relief'] != tk.SUNKEN:
             self.network_control_handler.mode = 'host'
             self.network_control_handler.new_request_message("start_host")
-            self.game_list_listbox.config(self.game_list_listbox.config(bg='light grey', state='disabled'))
-            self.host_button.config(text='Creating Game...', relief=tk.SUNKEN)
-            self.client_button.config(state='disabled')
-            self.user_id_entry.config(state='disabled')
-            self.refresh_button.config(state='disabled')
+            # self.game_list_listbox.config(self.game_list_listbox.config(bg='light grey', state='disabled'))
+            # self.host_button.config(text='Creating Game...', relief=tk.SUNKEN)
+            # self.client_button.config(state='disabled')
+            # self.user_id_entry.config(state='disabled')
+            # self.refresh_button.config(state='disabled')
+            self.block_ui(self.host_button)
         else:
-            self.game_list_listbox.config(self.game_list_listbox.config(bg='white', state='normal'))
-            self.host_button.config(text='Create Game', relief=tk.RAISED)
-            self.client_button.config(state='normal')
-            self.user_id_entry.config(state='normal')
-            self.refresh_button.config(state='normal')
+            self.network_control_handler.new_request_message("cancel_host")
+            # self.game_list_listbox.config(self.game_list_listbox.config(bg='white', state='normal'))
+            # self.host_button.config(text='Create Game', relief=tk.RAISED)
+            # self.client_button.config(state='normal')
+            # self.user_id_entry.config(state='normal')
+            # self.refresh_button.config(state='normal')
+            self.unblock_ui(self.host_button)
         # self.root.destroy()
 
     def client_button(self):
@@ -100,6 +127,9 @@ class GameLobbyUI:
             self.refresh_button.config(state='normal')
         # self.root.destroy()
 
+    def refresh_game_list(self):
+        self.network_control_handler.new_request_message("fetch_available_hosts")
+
     def update_game_list(self, games):
         for each in self.game_list:
             if each not in games:
@@ -110,5 +140,5 @@ class GameLobbyUI:
         self.game_list = games
 
     def run(self):
-        self.update_game_list([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
+        self.refresh_game_list()
         self.root.mainloop()
