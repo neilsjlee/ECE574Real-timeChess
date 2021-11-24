@@ -42,7 +42,7 @@ class NetworkControl(threading.Thread):
 
     def get_control_class(self, control):
         self.c = control
-        self.mode = self.c.mode
+        # self.mode = self.c.mode
 
     def set_game_lobby_ui_handler(self, game_lobby_ui_handler):
         self.game_lobby_ui = game_lobby_ui_handler
@@ -65,9 +65,13 @@ class NetworkControl(threading.Thread):
             self.v()
             self.mqtt_handle.publish(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + self.mode, new_message)
 
-    def new_request_message(self, request_code):
+    def new_request_message(self, request_code, target_host=None):
+        if target_host is None:
+            payload = {"request": request_code}
+        else:
+            payload = {"request": request_code, "target_host": target_host}
         self.p()
-        self.outgoing_request_list.append(json.dumps({"request": request_code}))
+        self.outgoing_request_list.append(json.dumps(payload))
         self.v()
 
     def send_request_message(self):
@@ -97,58 +101,81 @@ class NetworkControl(threading.Thread):
         else:
             payload_dict = {"response": response_code}
             payload_dict.update(data)
-            print(payload_dict)
             self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict))
 
     def send_request(self, request_code, data=None):
         if data is None:
             self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps({"request": request_code}))
         else:
-            payload_dict = {"response": request_code}
-            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict.update(data)))
+            payload_dict = {"request": request_code}
+            payload_dict.update(data)
+            self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict))
+
+    """
+    def ready_to_start_a_game(self, mode, opponent_id):
+        self.mode = mode
+        self.opponent_id = opponent_id
+        
+        if mode == 'host':
+            print("GAME START - START AS A HOST. Opponent ID is: ", self.opponent_id)
+            self.send_response("accept_join", {"client_id": self.opponent_id})
+            self.host_id = self.my_id
+            self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
+            print(self.mode)
+            self.in_game_flag = True
+            self.game_lobby_ui.start_game()
+        elif mode == 'client':
+            pass
+        """
+
+    def on_message(self, client, userdata, msg):
+        print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+
+        message_topic_list = msg.topic.split('/')
+        message_category = message_topic_list[0]
+        data = json.loads(msg.payload.decode())
+        if message_category == self.GAME_LOBBY_DEFAULT_TOPIC:
+            if "request" in data:
+                if data["request"] == "status":  # ACK response to server's status check request
+                    self.send_response("ok")
+                if data["request"] == "join_request":
+                    self.send_response("accept_join", {"client_id": data["client_id"]})
+                    self.opponent_id = data["client_id"]
+                    print("GAME START - START AS A HOST. Opponent ID is: ", self.opponent_id)
+                    self.host_id = self.my_id
+                    self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
+                    self.mode = 'host'
+                    self.in_game_flag = True
+
+                    self.game_lobby_ui.start_game()
+
+            elif "response" in data:
+                if data["response"] == "join_complete":
+                    print("GAME START - START AS A CLIENT. Opponent ID is: ", self.opponent_id)
+                    self.host_id = self.opponent_id
+                    self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/host")
+                    self.mode = 'client'
+                    self.in_game_flag = True
+
+                    self.game_lobby_ui.start_game()
+
+                if data["response"] == "ack_fetch_available_hosts":
+                    self.game_lobby_ui.update_game_list(data["hosts"])
+        elif message_category == self.IN_GAME_DEFAULT_TOPIC:
+            if "request" in data:
+                if data["request"] == "join":
+                    self.opponent_id = data["id"]
+                    self.mqtt_handle.publish(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + self.mode,
+                                             json.dumps({"response": "welcome"}))
+            if "response" in data:
+                if data["response"] == "welcome":
+                    self.in_game_flag = True
+            elif "origin" in data:
+                self.start_new_movement_from_client(tuple(data["origin"]), tuple(data["destination"]),
+                                                    datetime.fromtimestamp(data["start_time"]))
 
     def add_message_listener(self):
-        def on_message(client, userdata, msg):
-            print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
-
-            message_topic_list = msg.topic.split('/')
-            message_category = message_topic_list[0]
-            data = json.loads(msg.payload.decode())
-            if message_category == "game_lobby":
-                if "request" in data:
-                    if data["request"] == "status":     # ACK response to server's status check request
-                        self.send_response("ok")
-                elif "response" in data:
-                    if data["response"] == "ack_start_client":
-                        if len(data["hosts"]) > 0:
-                            # NEED TO IMPLEMENT AN GUI FOR SELECTING A HOST
-                            self.host_id = data["hosts"][0]
-                            self.mqtt_handle.publish(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + self.mode,
-                                                     json.dumps({"request": "join", "id": self.my_id}))
-                            self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/host")
-                            self.in_game_flag = True
-                            # NEED TO IMPLEMENT AN GUI FOR SELECTING A HOST
-                        else:
-                            print("No host is available")
-                    if data["response"] == "ack_fetch_available_hosts":
-                        if len(data["hosts"]) > 0:
-                            self.game_lobby_ui.update_game_list(data["hosts"])
-                        else:
-                            print("No host is available")
-            elif message_category == "in_game":
-                if "request" in data:
-                    if data["request"] == "join":
-                        self.opponent_id = data["id"]
-                        self.mqtt_handle.publish(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + self.mode,
-                                                 json.dumps({"response": "welcome"}))
-                        self.in_game_flag = True
-                if "response" in data:
-                    if data["response"] == "welcome":
-                        self.in_game_flag = True
-                elif "origin" in data:
-                    self.start_new_movement_from_client(tuple(data["origin"]), tuple(data["destination"]), datetime.fromtimestamp(data["start_time"]))
-
-        self.mqtt_handle.on_message = on_message
+        self.mqtt_handle.on_message = self.on_message
 
     def start_new_movement_from_client(self, origin, destination, start_time):
         target = self.c.find_target(origin)
@@ -171,13 +198,14 @@ class NetworkControl(threading.Thread):
 
         self.mqtt_handle.loop_start()
 
-        alive_check_interval = time.time()
+        # alive_check_interval = time.time()
 
         while True:
+            """
             if not self.in_game_flag:                       # Game Lobby (Initial Setting)
                 if self.mode == "host":
                     self.host_id = self.my_id
-                    self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
+                    # self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
                 elif self.mode == "client":
                     pass
                     # self.host_id =
@@ -188,6 +216,11 @@ class NetworkControl(threading.Thread):
                 if current_time - alive_check_interval > 5:
                     alive_check_interval = current_time
 
+                self.send_movement_message()
+            self.send_request_message()
+            time.sleep(0.1)
+            """
+            if self.in_game_flag:
                 self.send_movement_message()
             self.send_request_message()
             time.sleep(0.1)

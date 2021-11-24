@@ -55,12 +55,6 @@ class Model:
         except:
             pass
 
-        # piece move conditions
-        # for row in self.board:
-#             for piece in row:
-#                 if piece and piece.name == 'pawn' and piece.en_passant:
-#                     piece.en_passant = False
-
         if target.name == 'pawn':
             if target.double_move:
                 target.double_move = False
@@ -92,8 +86,14 @@ class Model:
             target.castle_rights = False
 
         # add any existing piece to captures list
-        if self.board[destination[1]][destination[0]]:
-            self.captures.append(self.board[destination[1]][destination[0]])
+        captured_piece = self.board[destination[1]][destination[0]]
+        if captured_piece:
+            self.captures.append(captured_piece)
+            print("CAPTURES:", self.captures)
+            if captured_piece.name == 'king':
+                print(captured_piece.color, "lost")
+                self.playing = False
+
 
         self.board[destination[1]][destination[0]] = target
 
@@ -122,8 +122,9 @@ class Model:
                     each.en_passant = False
 
     def model_process(self):
-        self.process_movement()
-        self.process_cool_down()
+        if self.playing:
+            self.process_movement()
+            self.process_cool_down()
 
 
 class Piece:

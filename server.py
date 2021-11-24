@@ -34,8 +34,9 @@ class Server:
         if data is None:
             self.mqtt_handle.publish(self.DEFAULT_TOPIC+"/"+client_id + self.FROM_SERVER, json.dumps({"request": request_code}))
         else:
-            payload_dict = {"response": request_code}
-            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id + self.FROM_SERVER, json.dumps(payload_dict.update(data)))
+            payload_dict = {"request": request_code}
+            payload_dict.update(data)
+            self.mqtt_handle.publish(self.DEFAULT_TOPIC + "/" + client_id + self.FROM_SERVER, json.dumps(payload_dict))
 
     def subscribe(self):
         def on_message(client, userdata, msg):
@@ -51,8 +52,14 @@ class Server:
                     print("Connected Hosts:\t ")
                     for each in self.connected_hosts:
                         print("\t" + each)
+                if data["request"] == "cancel_host":
+                    try:
+                        self.connected_hosts.remove(client_id)
+                    except:
+                        print("Unable to delete a host from the list. The list is: \n", self.connected_hosts)
                 if data["request"] == "start_client":
-                    self.send_response(client_id, "ack_start_client", {"hosts": self.connected_hosts})
+                    print(data["target_host"], "join_request", {"client_id": client_id})
+                    self.send_request(data["target_host"], "join_request", {"client_id": client_id})
                     self.connected_clients.append(client_id)
                 if data["request"] == "fetch_available_hosts":
                     self.send_response(client_id, "ack_fetch_available_hosts", {"hosts": self.connected_hosts})
@@ -60,6 +67,9 @@ class Server:
             elif "response" in data:
                 if data["response"] == "ok":
                     self.connected_hosts.append(client_id)
+                if data["response"] == "accept_join":
+                    self.send_response(data["client_id"], "join_complete")
+                    self.connected_hosts.remove(client_id)
 
             # print('[ERROR] UNABLE TO PROCESS AN INVALID MESSAGE - Received message is not JSON')
 
@@ -75,8 +85,8 @@ class Server:
 
         while True:
             current_time = time.time()
-            if current_time - alive_check_interval > 60:
-                print('60 seconds')
+            if current_time - alive_check_interval > 30:
+                print('30 seconds')
                 alive_check_interval = current_time
                 for each in self.connected_hosts:
                     self.send_request(each, "status")

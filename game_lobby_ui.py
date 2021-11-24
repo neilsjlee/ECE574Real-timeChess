@@ -1,4 +1,7 @@
 import tkinter as tk
+from tkinter import messagebox
+
+from game_main import GameMain
 
 
 class GameLobbyUI:
@@ -7,6 +10,8 @@ class GameLobbyUI:
         self.network_control_handler = None
         self.game_list = []
         self.id = ""
+
+        self.game_start_signal = False
 
         # UI Component Init
         self.root = tk.Tk()
@@ -91,41 +96,27 @@ class GameLobbyUI:
             exception.config(text=temp, relief=tk.RAISED)
 
     def host_button(self):
+        self.update_user_id()
         if self.host_button['relief'] != tk.SUNKEN:
-            self.network_control_handler.mode = 'host'
             self.network_control_handler.new_request_message("start_host")
-            # self.game_list_listbox.config(self.game_list_listbox.config(bg='light grey', state='disabled'))
-            # self.host_button.config(text='Creating Game...', relief=tk.SUNKEN)
-            # self.client_button.config(state='disabled')
-            # self.user_id_entry.config(state='disabled')
-            # self.refresh_button.config(state='disabled')
             self.block_ui(self.host_button)
         else:
             self.network_control_handler.new_request_message("cancel_host")
-            # self.game_list_listbox.config(self.game_list_listbox.config(bg='white', state='normal'))
-            # self.host_button.config(text='Create Game', relief=tk.RAISED)
-            # self.client_button.config(state='normal')
-            # self.user_id_entry.config(state='normal')
-            # self.refresh_button.config(state='normal')
             self.unblock_ui(self.host_button)
-        # self.root.destroy()
 
     def client_button(self):
+        self.update_user_id()
         if self.client_button['relief'] != tk.SUNKEN:
-            self.network_control_handler.mode = 'client'
-            self.network_control_handler.new_request_message("start_client")
-            self.game_list_listbox.config(self.game_list_listbox.config(bg='light grey', state='disabled'))
-            self.client_button.config(text='Joining Game...', relief=tk.SUNKEN)
-            self.host_button.config(state='disabled')
-            self.user_id_entry.config(state='disabled')
-            self.refresh_button.config(state='disabled')
+            selected_host = self.game_list_listbox.curselection()
+            if len(selected_host) <= 0:
+                tk.messagebox.showerror(title="Need to select a valid game host", message="No game host was selected.\n\n"
+                                                                   "Please select a valid game host and try again.")
+            else:
+                self.network_control_handler.new_request_message("start_client", self.game_list_listbox.get(selected_host[0]))
+                self.network_control_handler.opponent_id = self.game_list_listbox.get(selected_host[0])
+                self.block_ui(self.client_button)
         else:
-            self.game_list_listbox.config(self.game_list_listbox.config(bg='white', state='normal'))
-            self.client_button.config(text='Join Game', relief=tk.RAISED)
-            self.host_button.config(state='normal')
-            self.user_id_entry.config(state='normal')
-            self.refresh_button.config(state='normal')
-        # self.root.destroy()
+            self.unblock_ui(self.client_button)
 
     def refresh_game_list(self):
         self.network_control_handler.new_request_message("fetch_available_hosts")
@@ -133,12 +124,31 @@ class GameLobbyUI:
     def update_game_list(self, games):
         for each in self.game_list:
             if each not in games:
-                self.game_list_listbox.delete(self.game_list_listbox.getvar(each))
+                index_number = self.game_list_listbox.get(0, tk.END).index(each)
+                self.game_list_listbox.delete(index_number)
         for each in games:
             if each not in self.game_list:
                 self.game_list_listbox.insert(tk.END, each)
         self.game_list = games
 
+    def update_user_id(self):
+        new_id = self.user_id_entry.get()
+        if new_id != self.id:
+            print("ID CHANGED: ", new_id)
+        self.network_control_handler.update_user_id(new_id)
+        self.id = new_id
+
+    def start_game(self):
+        self.game_start_signal = True
+        self.root.quit()
+
     def run(self):
         self.refresh_game_list()
         self.root.mainloop()
+
+        if self.game_start_signal:
+            game_main = GameMain(self.network_control_handler)
+            game_main.run()
+
+        self.root.destroy()
+
