@@ -24,7 +24,9 @@ class Model:
 
         self.promotion = 'queen'
 
-    def reset_board(with_pieces=True):
+        self.winner = ''
+
+    def reset_board(self, with_pieces=True):
         def generate_pieces(color):
             return [Rook(color), Knight(color), Bishop(color), Queen(color),
                     King(color), Bishop(color), Knight(color), Rook(color)]
@@ -93,22 +95,10 @@ class Model:
             if captured_piece.name == 'king':
                 print(captured_piece.color, "lost")
                 self.playing = False
-
+                self.winner = 'black' if captured_piece.color == 'white' else 'white'
 
         self.board[destination[1]][destination[0]] = target
 
-        # move piece
-        # if not promoting:
-        #     board[destination[1]][destination[0]] = target
-        # else:
-        #     board[destination[1]][destination[0]] = piece_dict[promotion]
-        #     transcript = transcript[:-1] + f'={promotion[0].upper()} ' if promotion != 'knight' else '=N '
-        # self.board[origin[1]][origin[0]] = None
-
-        # any checks with new board status
-        # enemy_king = kings[int(target.color == "white")]
-        # check = board[enemy_king[1]][enemy_king[0]].in_check(board, enemy_king)
-        # return board, captures, kings, check
         target.cool_down = COOL_DOWN
         self.cool_down_list.append(target)
 
@@ -213,14 +203,12 @@ class King(Piece):
 
     def castle(self, board, x, y):
         moves = []
-        if board[self.back_rank][0] and board[self.back_rank][0].name == 'rook' and board[self.back_rank][
-            0].castle_rights:
+        if board[self.back_rank][0] and board[self.back_rank][0].name == 'rook' and board[self.back_rank][0].castle_rights:
             squares = [(i, self.back_rank) for i in range(1, 4)]
             if all(not piece for piece in board[self.back_rank][1:4]) and all(
                     not self.in_check(board, square) for square in squares):
                 moves.append((2, self.back_rank))
-        if board[self.back_rank][7] and board[self.back_rank][7].name == 'rook' and board[self.back_rank][
-            7].castle_rights:
+        if board[self.back_rank][7] and board[self.back_rank][7].name == 'rook' and board[self.back_rank][7].castle_rights:
             squares = [(i, self.back_rank) for i in range(5, 7)]
             if all(not piece for piece in board[self.back_rank][5:7]) and all(
                     not self.in_check(board, square) for square in squares):

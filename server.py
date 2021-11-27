@@ -83,6 +83,8 @@ class Server:
 
         alive_check_interval = time.time()
 
+        print("THE SERVER IS UP")
+
         while True:
             current_time = time.time()
             if current_time - alive_check_interval > 30:

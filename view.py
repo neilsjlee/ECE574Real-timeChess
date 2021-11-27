@@ -15,7 +15,7 @@ class View:
         self.font = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
         self.micro_font = pg.freetype.Font('FreeSerif-4aeK.ttf', 25)
         self.font2 = pg.font.Font(None, 25)
-        self.font3 = pg.freetype.Font('FreeSerif-4aeK.ttf', 50)
+        self.font3 = pg.font.Font(None, 60)
 
     def draw_squares(self):
         color_dict = {True: WHITE, False: MAIZE}
@@ -27,10 +27,10 @@ class View:
             current_color = not current_color
 
     def draw_names(self):
-        self.pg.draw.rect(self.screen, WHITE, (470, 40, 220, 40))
+        self.pg.draw.rect(self.screen, BLACK, (470, 40, 220, 40))
         self.pg.draw.rect(self.screen, WHITE, (470, 400, 220, 40))
 
-        self.micro_font.render_to(self.screen, (480, 50), self.client_id, BLACK)
+        self.micro_font.render_to(self.screen, (480, 50), self.client_id, WHITE)
         self.micro_font.render_to(self.screen, (480, 410), self.host_id, BLACK)
 
     def draw_pieces(self):
@@ -72,9 +72,16 @@ class View:
     def view_process(self):
         self.screen.fill(BLUE)          # Background
         self.draw_squares()             # Board
-        self.draw_names()
+        self.draw_names()               # User ID
         self.draw_selected_square()
         self.draw_pieces()
         self.draw_moving_piece()
         self.draw_legal_moves()
+
+        if self.m.winner != '':
+            text = self.font3.render(self.m.winner.capitalize() + " won", True, WHITE if self.m.winner == 'black' else BLACK)
+            text_surface = self.pg.Surface(text.get_size())
+            text_surface.fill(WHITE if self.m.winner == 'white' else BLACK)
+            text_surface.blit(text, (0, 0))
+            self.screen.blit(text_surface, (470, 220))
 
