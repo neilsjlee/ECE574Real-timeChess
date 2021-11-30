@@ -37,15 +37,12 @@ class GameMain:
         self.n_c.get_control_class(self.c)
 
         while self.running[0]:
-            start_time = datetime.now()
             self.v.view_process()
             self.c.control_process()
             self.m.model_process()
 
             pg.display.update()
             self.clock.tick(FPS)
-            end_time = datetime.now()
-            print(end_time - start_time)
 
         pg.quit()
 
