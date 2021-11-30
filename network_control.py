@@ -111,23 +111,6 @@ class NetworkControl(threading.Thread):
             payload_dict.update(data)
             self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict))
 
-    """
-    def ready_to_start_a_game(self, mode, opponent_id):
-        self.mode = mode
-        self.opponent_id = opponent_id
-        
-        if mode == 'host':
-            print("GAME START - START AS A HOST. Opponent ID is: ", self.opponent_id)
-            self.send_response("accept_join", {"client_id": self.opponent_id})
-            self.host_id = self.my_id
-            self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
-            print(self.mode)
-            self.in_game_flag = True
-            self.game_lobby_ui.start_game()
-        elif mode == 'client':
-            pass
-        """
-
     def on_message(self, client, userdata, msg):
         print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
@@ -198,28 +181,7 @@ class NetworkControl(threading.Thread):
 
         self.mqtt_handle.loop_start()
 
-        # alive_check_interval = time.time()
-
         while True:
-            """
-            if not self.in_game_flag:                       # Game Lobby (Initial Setting)
-                if self.mode == "host":
-                    self.host_id = self.my_id
-                    # self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/client")
-                elif self.mode == "client":
-                    pass
-                    # self.host_id =
-                    # self.in_game_flag = True
-                    # self.mqtt_handle.subscribe(self.IN_GAME_DEFAULT_TOPIC + "/" + self.host_id + "/" + ("client" if self.mode == "host" else "host"))
-            else:                                           # In Game
-                current_time = time.time()
-                if current_time - alive_check_interval > 5:
-                    alive_check_interval = current_time
-
-                self.send_movement_message()
-            self.send_request_message()
-            time.sleep(0.1)
-            """
             if self.in_game_flag:
                 self.send_movement_message()
             self.send_request_message()
