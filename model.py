@@ -6,7 +6,7 @@ from datetime import datetime
 class Model:
 
     def __init__(self, mode):
-        self.board = self.reset_board()
+        self.board = self.reset_board()     # Chessboard initial setup
         self.playing = True
         self.mode = mode
 
@@ -27,11 +27,12 @@ class Model:
         self.winner = ''
 
     def reset_board(self, with_pieces=True):
+        # Chessboard initial setup
         def generate_pieces(color):
             return [Rook(color), Knight(color), Bishop(color), Queen(color),
                     King(color), Bishop(color), Knight(color), Rook(color)]
 
-        board = [[None for x in range(8)] for x in range(8)]
+        board = [[None for x in range(8)] for x in range(8)]    # 2 dimensional list variable
         if with_pieces:
             board[0] = generate_pieces("black")
             board[7] = generate_pieces("white")
@@ -40,6 +41,7 @@ class Model:
         return board
 
     def process_movement(self):
+        # Real-Time chess piece movement implementation
         for each in self.movement_list:
             if ((abs(each['current_coordinate_y'] - each['destination'][1]) < 0.01) & (
                     abs(each['current_coordinate_x'] - each['destination'][0]) < 0.01)) or each['end_time'] < datetime.now():
@@ -130,6 +132,8 @@ class Piece:
         self.cool_down = 0
 
     def find_moves(self, board, location, current_destinations):
+        # Find legal moves for each piece based on the current status of chessboard and the selected piece type.
+
         x, y = location[0], location[1]
         legal_moves = []
         additional = set()
@@ -263,3 +267,4 @@ class Pawn(Piece):
             except IndexError:
                 pass
         return valid_attacks
+

@@ -4,6 +4,9 @@ import json
 
 
 class Server:
+    # This is the code for server program.
+    # Please run this program on the AWS EC2 for the best result.
+
     def __init__(self):
         self.MY_PORT = 1883
         self.MY_IP = '3.139.21.0'

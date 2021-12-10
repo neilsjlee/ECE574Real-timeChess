@@ -25,7 +25,7 @@ class GameMain:
     # Override
     def run(self):
 
-        pg.init()
+        pg.init()                           # PyGame Init
         pg.display.set_caption('Chess')
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -37,12 +37,13 @@ class GameMain:
         self.n_c.get_control_class(self.c)
 
         while self.running[0]:
-            self.v.view_process()
-            self.c.control_process()
-            self.m.model_process()
+            # Round Robin Scheduling
+            self.v.view_process()       # View class process
+            self.c.control_process()    # Control class process
+            self.m.model_process()      # Model class process
 
-            pg.display.update()
-            self.clock.tick(FPS)
+            pg.display.update()         # Refresh PyGame Display
+            self.clock.tick(FPS)    # FPS = 60
 
         pg.quit()
 

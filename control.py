@@ -8,13 +8,14 @@ import math
 class Control:
 
     def __init__(self, pg, model, network_control, running):
-        self.pg = pg
-        self.m = model
-        self.n_c = network_control
+        self.pg = pg                    # PyGame handler
+        self.m = model                  # Model Handler
+        self.n_c = network_control      # NetworkControl Handler
+
         self.running = running
         self.mode = self.m.mode
 
-        self.opponent_movement_list = []
+        self.opponent_movement_list = []    # A critical section where NetworkControl put inputs and Control polls.
 
         self.lock = threading.Lock()
 

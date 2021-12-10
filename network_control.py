@@ -9,36 +9,36 @@ import string
 import json
 
 
-class NetworkControl(threading.Thread):
+class NetworkControl(threading.Thread):     # NetworkControl class inherits Python's threading.Thread class.
     def __init__(self):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self)     # Create a thread.
 
-        self.c = None
-        self.game_lobby_ui = None
+        self.c = None                   # A variable for storing Control class's handler
+        self.game_lobby_ui = None       # A variable for storing GameLobbyUI class's handler
 
-        self.in_game_flag = False
-        self.mode = ""
+        self.in_game_flag = False       # A flag for "In Game" state. Please refer to the State Transition Diagram
+        self.mode = ""                  # Whether the client will be creating a game('host') or joining a game('client')
         self.my_public_ip = ""
         self.my_private_ip = ""
 
-        self.mqtt_handle = None
+        self.mqtt_handle = None         # A variable for storing "paho.mqtt.client"(external library) handler
         self.am_i_host = True
 
-        self.my_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+        self.my_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))  # Generates a random Client ID
         self.opponent_id = ""
         self.host_id = ""
 
-        self.MQTT_BROKER_IP = '3.139.21.0'
-        self.MQTT_BROKER_PORT = 1883
-        self.GAME_LOBBY_DEFAULT_TOPIC = 'game_lobby'
+        self.MQTT_BROKER_IP = '3.139.21.0'              # Sangjun's AWS EC2 IP Address
+        self.MQTT_BROKER_PORT = 1883                    # Sangjun's AWS EC2 Port number
+        self.GAME_LOBBY_DEFAULT_TOPIC = 'game_lobby'    # Please refer to the MQTT Topic Structure diagram in the report
         self.FROM_SERVER = "/from_server"
         self.TO_SERVER = "/to_server"
         self.IN_GAME_DEFAULT_TOPIC = 'in_game'
 
-        self.lock = threading.Lock()
+        self.lock = threading.Lock()                    # Mutex
 
-        self.outgoing_message_list = []
-        self.outgoing_request_list = []
+        self.outgoing_message_list = []         # A critical section where Control put inputs NetworkControl polls
+        self.outgoing_request_list = []         # A critical section where GameLobbyUI put inputs NetworkControl polls
 
     def get_control_class(self, control):
         self.c = control
@@ -47,10 +47,10 @@ class NetworkControl(threading.Thread):
     def set_game_lobby_ui_handler(self, game_lobby_ui_handler):
         self.game_lobby_ui = game_lobby_ui_handler
 
-    def p(self):
+    def p(self):                # Mutex Acquire
         self.lock.acquire()
 
-    def v(self):
+    def v(self):                # Mutex Release
         self.lock.release()
 
     def new_movement_message(self, origin, destination, start_time):
@@ -112,6 +112,8 @@ class NetworkControl(threading.Thread):
             self.mqtt_handle.publish(self.GAME_LOBBY_DEFAULT_TOPIC + "/" + self.my_id + self.TO_SERVER, json.dumps(payload_dict))
 
     def on_message(self, client, userdata, msg):
+        # This method handles the received messages
+
         print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
         message_topic_list = msg.topic.split('/')
@@ -186,6 +188,4 @@ class NetworkControl(threading.Thread):
                 self.send_movement_message()
             self.send_request_message()
             time.sleep(0.1)
-
-
 
